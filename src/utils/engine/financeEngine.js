@@ -1,16 +1,19 @@
+import { calculateBenefitFactor } from './socialSecurityRules';
+import { deriveEquityData, predictDividendGrowth } from './equityIntelligence';
 export const INITIAL_PROFILE = {
     financials: {
         income: 0,
         // New "Tax Bucket" Model (McKnight / Choate)
         assets: {
-            taxable: 400000, // Brokerage, Savings, Real Estate (Capital Gains)
-            taxDeferred: 500000, // 401k, Traditional IRA (Ordinary Income upon withdrawal, RMDs)
-            taxFree: 50000, // Roth IRA, HSA, Life Insurance Cash Value (0% Tax)
+            taxable: 400000,
+            taxDeferred: 500000,
+            taxFree: 50000,
+            realEstate: [
+                { id: 1, name: 'Primary Residence', type: 'primary', value: 1200000, mortgage: 800000, rate: 0.035, termYears: 30, startDate: '2020-01-01' },
+                { id: 2, name: 'Mountain Rental', type: 'rental', value: 500000, mortgage: 300000, rate: 0.045, termYears: 30, annualIncome: 36000 }
+            ]
         },
-        liabilities: {
-            mortgage: 300000,
-            other: 0
-        },
+        liabilities: [],
         taxRate: 0.35,
         inflationRate: 0.03,
         marketReturn: 0.08
@@ -19,7 +22,7 @@ export const INITIAL_PROFILE = {
         {
             id: 'primary',
             name: 'Husband',
-            age: 40,
+            age: 55,
             relation: 'Self',
             residency: 'US_Citizen',
             state: 'CA',
@@ -27,11 +30,19 @@ export const INITIAL_PROFILE = {
             financials: {
                 income: 250000,
                 spending: 120000,
-                stocks: 0,
-                retirement: 0,
-                realEstate: 0,
-                cash: 0,
-                loans: 0
+                stocks: 150000,
+                retirement: 200000,
+                realEstate: [
+                    { id: 101, name: 'Primary Residence', type: 'primary', value: 500000, mortgage: 300000, rate: 0.035, termYears: 30 }
+                ],
+                cash: 50000,
+                positions: [
+                    { id: 1, ticker: 'VTSAX', description: 'Total Stock Market Index', value: 100000, costBasis: 60000, taxStatus: 'taxable', dividendYield: 0.015 },
+                    { id: 2, ticker: 'AAPL', description: 'Apple Inc.', value: 50000, costBasis: 15000, taxStatus: 'taxable', dividendYield: 0.005 }
+                ],
+                debts: [
+                    { id: 1, name: 'Primary Mortgage', balance: 300000, rate: 0.035, termYears: 30, type: 'mortgage', startDate: '2020-01-01' }
+                ]
             }
         }
     ],
@@ -104,6 +115,25 @@ export const AVAILABLE_STRATEGIES = [
             { key: 'term', label: 'Trust Term (Years)', type: 'number', default: 15 },
             { key: 'payout', label: 'Annuity Payout (%)', type: 'number', default: 5 }
         ]
+    },
+    {
+        id: 'social_security',
+        name: 'Social Security Optimization',
+        description: 'Strategically delay claiming benefits to increase guaranteed inflation-adjusted income by 8% per year delayed.',
+        inputs: [
+            { key: 'claimAge', label: 'Claiming Age', type: 'number', default: 67 },
+            { key: 'estimatedPIA', label: 'Estimated Monthly Benefit (at 67)', type: 'number', default: 3000 }
+        ]
+    },
+    {
+        id: '1031_exchange',
+        name: '1031 Property Exchange',
+        description: 'Defer capital gains tax by swapping investment real estate for like-kind property. (IRC Section 1031).',
+        inputs: [
+            { key: 'targetYear', label: 'Exchange Year (Relative)', type: 'number', default: 5 },
+            { key: 'oldBasis', label: 'Current Property Basis', type: 'number', default: 500000 },
+            { key: 'appreciation', label: 'Projected Appreciation Alpha (%)', type: 'number', default: 2 }
+        ]
     }
 ];
 
@@ -160,6 +190,55 @@ export const getRecommendedStrategies = (profile) => {
         });
     }
 
+    // 4. Social Security Optimization (Kotlikoff/Munnell)
+    if (primary.age >= 50 && primary.age <= 70) {
+        recs.push({
+            id: 'social_security',
+            title: 'SS Delayed Claiming Strategy',
+            description: 'Strategically delay Social Security to age 70',
+            score: 88,
+            impact: '8% guaranteed annual benefit increase',
+            reason: `Inflation-protected longevity insurance. By delaying from 67 to 70, you increase your base benefit by 24% for life.`
+        });
+    }
+
+    // 5. High-Interest Debt (Dave Ramsey / Suze Orman)
+    safeFamily.forEach(member => {
+        const debts = member.financials?.debts || [];
+        const poisonousDebt = debts.filter(d => d.rate > 0.07);
+        if (poisonousDebt.length > 0) {
+            recs.push({
+                id: 'debt_paydown',
+                title: 'Aggressive Debt Paydown',
+                description: 'Prioritize paying off high-interest liabilities (>7%)',
+                score: 98,
+                impact: 'Guaranteed risk-free return',
+                reason: `Detected ${member.name} has debt at ${Math.round(poisonousDebt[0].rate * 100)}% interest. Paying this off is a "guaranteed return" high-bar hurdle that beats market expectations.`
+            });
+        }
+    });
+
+    // 6. 1031 Exchange (Tax Deferral Magic)
+    const hasRentalRealEstate = (() => {
+        const hRE = profile.financials?.assets?.realEstate;
+        const householdHasRental = Array.isArray(hRE) && hRE.some(p => p.type === 'rental');
+        const familyHasRental = safeFamily.some(m => {
+            const mRE = m.financials?.realEstate;
+            return Array.isArray(mRE) && mRE.some(p => p.type === 'rental');
+        });
+        return householdHasRental || familyHasRental;
+    })();
+    if (hasRentalRealEstate) {
+        recs.push({
+            id: '1031_exchange',
+            title: '1031 Exchange Strategy',
+            description: 'Utilize Section 1031 to swap rental properties and defer capital gains',
+            score: 82,
+            impact: 'Significant tax deferral on appreciation',
+            reason: "Real Estate Deferral: Detected rental properties. Using a 1031 exchange allows you to avoid tax on sale and keep 100% of your equity compounding in a new property."
+        });
+    }
+
     return recs.sort((a, b) => b.score - a.score);
 };
 
@@ -173,30 +252,136 @@ export const calculateProjection = (profile) => {
     const safeFamily = Array.isArray(family) ? family : [];
     const isPrimaryUnit = safeFamily.some(m => m.relation === 'Self');
 
-    // Initialize buckets: 
+    // Initialize buckets:
     // Only include household base (financials.assets) if this unit includes the 'Self' primary member.
-    let b_Taxable = isPrimaryUnit ? (financials.assets?.taxable || 0) : 0;
-    let b_Deferred = isPrimaryUnit ? (financials.assets?.taxDeferred || 0) : 0;
-    let b_Free = isPrimaryUnit ? (financials.assets?.taxFree || 0) : 0;
+    let b_Taxable = isPrimaryUnit ? (parseFloat(financials.assets?.taxable) || 0) : 0;
+    let b_Deferred = isPrimaryUnit ? (parseFloat(financials.assets?.taxDeferred) || 0) : 0;
+    let b_Free = isPrimaryUnit ? (parseFloat(financials.assets?.taxFree) || 0) : 0;
 
-    // Aggregate Initial Family Member Assets and Loans
-    let totalMemberLoans = 0;
+    // Aggregate Shared / Clan Real Estate and Liabilities
+    const clanPropertyDebts = [];
+    const clanRentalIncome = [];
+    const clanRentalExpenses = [];
+    let b_grossRentalValue = 0;
+    if (isPrimaryUnit) {
+        const re = financials.assets?.realEstate || [];
+        if (Array.isArray(re)) {
+            re.forEach(p => {
+                b_Taxable += (parseFloat(p.value) || 0);
+                if (p.type === 'rental') {
+                    b_grossRentalValue += (parseFloat(p.value) || 0);
+                    if (p.annualIncome) clanRentalIncome.push(parseFloat(p.annualIncome) || 0);
+                    const expenses = (parseFloat(p.propertyTax) || 0) + (parseFloat(p.managementFee) || 0);
+                    if (expenses) clanRentalExpenses.push(expenses);
+                }
+                if (p.mortgage) clanPropertyDebts.push({ balance: parseFloat(p.mortgage) || 0, rate: parseFloat(p.rate) || 0.04, term: parseInt(p.termYears) || 30 });
+            });
+        } else {
+            b_Taxable += parseFloat(re) || 0;
+        }
+
+        b_Taxable += (parseFloat(financials.assets?.cash) || 0);
+
+        // Global Clan Positions
+        if (Array.isArray(financials.assets?.positions)) {
+            financials.assets.positions.forEach(pos => {
+                const val = parseFloat(pos.value) || 0;
+                if (pos.taxStatus === 'taxable' || !pos.taxStatus) b_Taxable += val;
+                else if (pos.taxStatus === 'taxDeferred') b_Deferred += val;
+                else if (pos.taxStatus === 'taxFree') b_Free += val;
+            });
+        }
+
+        // Global Clan Liabilities
+        const liab = financials.liabilities || [];
+        if (Array.isArray(liab)) {
+            liab.forEach(l => {
+                clanPropertyDebts.push({ balance: l.balance || 0, rate: l.rate || 0.06, term: l.term || 5 });
+            });
+        }
+    }
+
+    // Aggregate Family Member Assets, Income, Spending, and Retirement Dates
+    let memberPropertyDebts = [];
+    let memberRentalIncome = [];
+    let memberRentalExpenses = [];
+    const memberIncomes = []; // Track each member's income and retirement age
+    let totalMemberSpending = 0;
+
     safeFamily.forEach(member => {
         if (member.financials) {
             const f = member.financials;
-            // Assets mapped to buckets
-            b_Taxable += (f.stocks || 0) + (f.realEstate || 0) + (f.cash || 0);
-            b_Deferred += (f.retirement || 0);
-            b_Free += (f.taxFree || 0);
 
-            // Collect member specific loans
-            totalMemberLoans += (f.loans || 0);
+            // Track member income and retirement
+            const memberIncome = parseFloat(f.income) || 0;
+            const memberAge = member.age || 45;
+            const retirementAge = member.retirementAge || 67; // Default retirement age
 
-            // Backward compatibility for old buckets structure if existing
-            if (f.taxBuckets) {
-                b_Taxable += (f.taxBuckets.taxable || 0);
-                b_Deferred += (f.taxBuckets.taxDeferred || 0);
-                b_Free += (f.taxBuckets.taxFree || 0);
+            if (memberIncome > 0) {
+                memberIncomes.push({
+                    name: member.name,
+                    income: memberIncome,
+                    currentAge: memberAge,
+                    retirementAge: retirementAge,
+                    yearsUntilRetirement: Math.max(0, retirementAge - memberAge)
+                });
+            }
+
+            // Aggregate member spending
+            totalMemberSpending += (parseFloat(f.spending) || 0);
+
+            // Member Granular Real Estate
+            if (f.realEstate && Array.isArray(f.realEstate)) {
+                f.realEstate.forEach(p => {
+                    b_Taxable += (parseFloat(p.value) || 0);
+                    if (p.type === 'rental') {
+                        b_grossRentalValue += (parseFloat(p.value) || 0);
+                        if (p.annualIncome) memberRentalIncome.push(parseFloat(p.annualIncome) || 0);
+                        const expenses = (parseFloat(p.propertyTax) || 0) + (parseFloat(p.managementFee) || 0);
+                        if (expenses) memberRentalExpenses.push(expenses);
+                    }
+                    if (p.mortgage) memberPropertyDebts.push({ balance: parseFloat(p.mortgage) || 0, rate: parseFloat(p.rate) || 0.04, term: parseInt(p.termYears) || 30 });
+                });
+            } else {
+                b_Taxable += parseFloat(f.realEstate) || 0;
+            }
+
+            // Assets: Prioritize Granular Positions
+            let memberAssetsAdded = false;
+
+            if (Array.isArray(f.positions) && f.positions.length > 0) {
+                f.positions.forEach(pos => {
+                    const val = parseFloat(pos.value) || 0;
+                    if (pos.taxStatus === 'taxDeferred') b_Deferred += val;
+                    else if (pos.taxStatus === 'taxFree') b_Free += val;
+                    else b_Taxable += val;
+                });
+                memberAssetsAdded = true;
+            }
+
+            if (!memberAssetsAdded && ((parseFloat(f.stocks) || 0) > 0 || (parseFloat(f.retirement) || 0) > 0 || (parseFloat(f.taxFree) || 0) > 0)) {
+                b_Taxable += (parseFloat(f.stocks) || 0);
+                b_Deferred += (parseFloat(f.retirement) || 0);
+                b_Free += (parseFloat(f.taxFree) || 0);
+                memberAssetsAdded = true;
+            }
+
+            // Fallback to legacy buckets
+            if (!memberAssetsAdded && f.taxBuckets) {
+                b_Taxable += (parseFloat(f.taxBuckets.taxable) || 0);
+                b_Deferred += (parseFloat(f.taxBuckets.taxDeferred) || 0);
+                b_Free += (parseFloat(f.taxBuckets.taxFree) || 0);
+            }
+
+            b_Taxable += (parseFloat(f.cash) || 0);
+
+            // Loans: Prioritize Granular Debts
+            if (Array.isArray(f.debts) && f.debts.length > 0) {
+                f.debts.forEach(debt => {
+                    memberPropertyDebts.push({ balance: parseFloat(debt.balance) || 0, rate: parseFloat(debt.rate) || 0.05, term: parseInt(debt.termYears) || 30 });
+                });
+            } else if (f.loans) {
+                memberPropertyDebts.push({ balance: parseFloat(f.loans) || 0, rate: 0.05, term: 10 });
             }
         }
     });
@@ -205,18 +390,14 @@ export const calculateProjection = (profile) => {
     let o_Deferred = b_Deferred;
     let o_Free = b_Free;
 
-    const totalLoans = (financials.liabilities?.mortgage || 0) + (financials.liabilities?.other || 0) + totalMemberLoans;
-
-    // Aggregate Total Household Income
-    let totalIncome = financials.income || 0;
-    safeFamily.forEach(member => {
-        totalIncome += (member.financials?.income || 0);
-    });
+    const allDebts = [...clanPropertyDebts, ...memberPropertyDebts];
+    const totalRentalIncome = [...clanRentalIncome, ...memberRentalIncome].reduce((a, b) => a + b, 0);
+    const totalRentalExpenses = [...clanRentalExpenses, ...memberRentalExpenses].reduce((a, b) => a + b, 0);
 
     // State Tax Logic
     const primaryMember = safeFamily.find(f => f.relation === 'Self') || safeFamily[0];
     let stateTaxRate = STATE_TAX_MAP[primaryMember?.state] || 0;
-    const effectiveTaxRate = 0.24 + stateTaxRate;
+    const effectiveTaxRate = (financials.taxRate !== undefined ? financials.taxRate : 0.24) + stateTaxRate;
 
     // --- REGIME PARAMETERS ---
     const regime = MARKET_REGIMES[profile.marketRegime] || MARKET_REGIMES['goldilocks'];
@@ -229,9 +410,8 @@ export const calculateProjection = (profile) => {
     const rothAmount = safeStrategies['roth_conversion']?.inputs?.annualAmount || 25000;
 
     const isSimplePath = safeStrategies['simple_path']?.active;
-    // JL Collins: "VTSAX and Chill" implies lower fee drag
-    const baselineDrag = 0.012; // 1.2% avg active fee + churn drag
-    const optimizedDrag = isSimplePath ? 0.0015 : 0.012; // 15bps vs 120bps
+    const baselineDrag = 0.012;
+    const optimizedDrag = isSimplePath ? 0.0015 : 0.012;
 
     const b_netReturn = baseMarketReturn - baselineDrag;
     const o_netReturn = baseMarketReturn - optimizedDrag;
@@ -239,104 +419,154 @@ export const calculateProjection = (profile) => {
     for (let year = 0; year <= years; year++) {
         const currentYear = new Date().getFullYear() + year;
         const inflationFactor = Math.pow(1 + inflationRate, year);
+        const wageGrowth = Math.pow(1.02, year);
 
-        // Linear debt payoff (Simplified modeling)
-        const debt = Math.max(0, totalLoans - (year * 20000));
+        // 1. Calculate Debt Dynamics (Amortized Principal)
+        const currentRemainingDebt = allDebts.reduce((acc, d) => {
+            const P = d.balance || 0;
+            const r = d.rate || 0.05;
+            const n = d.term || 30;
 
-        // 1. Calculate Milestone-Adjusted Household Income (Inflation adjusted)
-        let yearBaselineIncome = 0;
-        let yearOptimizedIncome = 0;
+            if (year >= n) return acc;
 
-        safeFamily.forEach(member => {
-            const currentAge = (member.age || 0) + year;
-            const isRetired = currentAge >= 65;
-
-            // Basic Earned Income (Stops at retirement, adjusted for 2% wage inflation)
-            if (!isRetired) {
-                const wageGrowth = Math.pow(1.02, year);
-                yearBaselineIncome += (member.financials?.income || 0) * wageGrowth;
-                yearOptimizedIncome += (member.financials?.income || 0) * wageGrowth;
+            let remaining;
+            if (r === 0) {
+                remaining = P * (1 - year / n);
+            } else {
+                // Standard Principal Balance Formula: P * [(1+r)^n - (1+r)^t] / [(1+r)^n - 1]
+                remaining = P * (Math.pow(1 + r, n) - Math.pow(1 + r, year)) / (Math.pow(1 + r, n) - 1);
             }
+            return acc + Math.max(0, remaining);
+        }, 0);
 
-            // Social Security Milestone ($30k/yr base, inflation matched)
-            if (currentAge >= 67) {
-                const ssBenefit = 30000 * inflationFactor;
-                yearBaselineIncome += ssBenefit;
-                yearOptimizedIncome += ssBenefit;
-                if (year === 1 && currentAge === 67) explanations.push(`${member.name} hits SS benefits milestone (Inflation-adjusted).`);
-            }
-        });
-
-        // 2. Forced RMD Milestone (IRS Rule: Age 73)
-        safeFamily.forEach(member => {
-            const currentAge = (member.age || 0) + year;
-            if (currentAge >= 73) {
-                const rmdFactor = 1 / (26.5);
-                const baselineRmd = b_Deferred * rmdFactor;
-                const optimizedRmd = o_Deferred * rmdFactor;
-
-                yearBaselineIncome += baselineRmd;
-                yearOptimizedIncome += optimizedRmd;
-
-                if (year === 1 && currentAge === 73) explanations.push(`⚠️ RMD Activation: IRS forcing taxable distributions for ${member.name}.`);
-            }
-        });
-
-        // 3. College Milestone (Education Drag - Inflated COA)
-        let yearCollegeDrag = 0;
-        safeFamily.forEach(member => {
-            const currentAge = (member.age || 0) + year;
-            if (member.relation.includes('Child') && currentAge >= 18 && currentAge <= 22) {
-                yearCollegeDrag += 50000 * inflationFactor;
-                if (year === 1 && currentAge === 18) explanations.push(`🎓 Education Milestone: $${(50000 * inflationFactor / 1000).toFixed(0)}k COA drag starts.`);
-            }
-        });
-
-        // 4. Baseline Calculation Logic
-        b_Taxable *= (1 + (b_netReturn * (1 - 0.2)));
-        b_Deferred *= (1 + b_netReturn);
-        b_Free *= (1 + b_netReturn);
-
-        // Aggregate total household spending from all members
-        let totalYearlySpending = 0;
-        safeFamily.forEach(m => {
-            totalYearlySpending += (m.financials?.spending || 0);
-        });
-
-        const currentSpending = totalYearlySpending * inflationFactor;
-        const b_surplus = (yearBaselineIncome * (1 - effectiveTaxRate)) - (currentSpending + yearCollegeDrag);
-        b_Taxable += b_surplus;
-
-        // 5. Optimized Calculation Logic (Roth + Wisdom)
-        if (isRothStrategy && o_Deferred > rothAmount) {
-            o_Deferred -= rothAmount;
-            const conversionTax = rothAmount * effectiveTaxRate;
-            o_Taxable -= conversionTax;
-            o_Free += rothAmount;
-        }
-
-        o_Taxable *= (1 + (o_netReturn * (1 - 0.2)));
-        o_Deferred *= (1 + o_netReturn);
-        o_Free *= (1 + o_netReturn);
-
-        const o_surplus = (yearOptimizedIncome * (1 - effectiveTaxRate)) - (currentSpending + yearCollegeDrag);
-        o_Taxable += o_surplus;
-
+        // Snapshot current total wealth before moving to next year's growth
         let b_Total = b_Taxable + b_Deferred + b_Free;
         let o_Total = o_Taxable + o_Deferred + o_Free;
 
         data.push({
             year: currentYear,
-            baseline: Math.round(b_Total - debt),
-            optimized: Math.round(o_Total - debt)
+            baseline: Math.round(b_Total - currentRemainingDebt),
+            optimized: Math.round(o_Total - currentRemainingDebt)
         });
+
+        if (year === years) break; // Final year snapshot taken, stop.
+
+        // --- TRANSITION TO NEXT YEAR ---
+
+        // 2. Yearly Cash Flow Calculation
+        const currentYearlyDebtService = allDebts.reduce((acc, d) => {
+            if (year < (d.term || 30)) {
+                const r = d.rate || 0.04;
+                const P = d.balance;
+                const N = (d.term || 30);
+                if (P === 0 || r === 0) return acc + (P / N);
+                const annualPayment = (P * r) / (1 - Math.pow(1 + r, -N));
+                return acc + annualPayment;
+            }
+            return acc;
+        }, 0);
+
+        // Calculate total income: clan base + active member incomes (respecting retirement)
+        const clanBaseIncome = (parseFloat(financials.income) || 0) * wageGrowth;
+        const activeMemberIncome = memberIncomes.reduce((total, m) => {
+            // Member stops earning after retirement
+            if (year >= m.yearsUntilRetirement) return total;
+            return total + (m.income * wageGrowth);
+        }, 0);
+
+        let yearBaselineIncome = clanBaseIncome + activeMemberIncome + (totalRentalIncome - totalRentalExpenses) * inflationFactor;
+        let yearOptimizedIncome = clanBaseIncome + activeMemberIncome + (totalRentalIncome - totalRentalExpenses) * inflationFactor;
+
+        safeFamily.forEach(member => {
+            const currentAge = (member.age || 0) + year;
+            if (currentAge < 65) {
+                yearBaselineIncome += (member.financials?.income || 0) * wageGrowth;
+                yearOptimizedIncome += (member.financials?.income || 0) * wageGrowth;
+            }
+
+            // Dividend Injections
+            if (member.financials?.positions) {
+                member.financials.positions.forEach(pos => {
+                    const annualDiv = (pos.value || 0) * (pos.dividendYield || 0);
+                    const tickerData = deriveEquityData(pos.ticker);
+                    const annualGrowth = tickerData.growth || predictDividendGrowth(pos.dividendYield, profile.marketRegime);
+                    const projectedDiv = annualDiv * Math.pow(1 + annualGrowth, year);
+                    yearBaselineIncome += projectedDiv;
+                    yearOptimizedIncome += projectedDiv;
+                });
+            }
+
+            // SS Optimization
+            const ssStrategy = safeStrategies['social_security'];
+            const optimizedClaimAge = ssStrategy?.active ? (ssStrategy.inputs?.claimAge || 67) : 67;
+            const pia = (ssStrategy?.inputs?.estimatedPIA || 3000);
+
+            if (currentAge >= 67) {
+                const b_factor = calculateBenefitFactor(67);
+                yearBaselineIncome += (pia * 12 * b_factor) * inflationFactor;
+            }
+            if (currentAge >= optimizedClaimAge) {
+                const o_factor = calculateBenefitFactor(optimizedClaimAge);
+                yearOptimizedIncome += (pia * 12 * o_factor) * inflationFactor;
+            }
+        });
+
+        // RMDs
+        safeFamily.forEach(member => {
+            if ((member.age || 0) + year >= 73) {
+                const rmd = (b_Deferred * (1 / 26.5));
+                yearBaselineIncome += rmd;
+                yearOptimizedIncome += (o_Deferred * (1 / 26.5));
+            }
+        });
+
+        // Spending
+        let totalYearlySpending = parseFloat(financials.spending) || 0;
+        safeFamily.forEach(m => totalYearlySpending += (m.financials?.spending || 0));
+        const currentSpending = totalYearlySpending * inflationFactor;
+
+        // College Drag
+        let yearCollegeDrag = 0;
+        safeFamily.forEach(m => {
+            const age = (m.age || 0) + year;
+            if (m.relation.includes('Child') && age >= 18 && age <= 22) yearCollegeDrag += 50000 * inflationFactor;
+        });
+
+        // 3. Growth & Surplus Injection
+        b_Taxable *= (1 + (b_netReturn * (1 - 0.2)));
+        b_Deferred *= (1 + b_netReturn);
+        b_Free *= (1 + b_netReturn);
+
+        const b_surplus = (yearBaselineIncome * (1 - effectiveTaxRate)) - (currentSpending + yearCollegeDrag + currentYearlyDebtService);
+        b_Taxable += b_surplus;
+
+        // Optimized Path Logic
+        const s_1031 = strategies?.['1031_exchange'];
+        let o_Yearly_netReturn = o_netReturn;
+        if (s_1031?.active) {
+            if (year >= (s_1031.inputs?.targetYear || 5)) o_Yearly_netReturn += (s_1031.inputs?.appreciation || 2) / 100;
+            if (year === (s_1031.inputs?.targetYear || 5)) {
+                const taxSaved = Math.max(0, b_grossRentalValue - (s_1031.inputs?.oldBasis || 500000)) * 0.2;
+                o_Taxable += taxSaved;
+                explanations.push(`🏡 Yr ${year}: 1031 Exchange executed. Deferring $${Math.round(taxSaved / 1000)}k tax.`);
+            }
+        }
+
+        if (isRothStrategy && o_Deferred > rothAmount) {
+            o_Deferred -= rothAmount;
+            o_Taxable -= (rothAmount * effectiveTaxRate);
+            o_Free += rothAmount;
+        }
+
+        o_Taxable *= (1 + (o_Yearly_netReturn * (1 - 0.2)));
+        o_Deferred *= (1 + o_Yearly_netReturn);
+        o_Free *= (1 + o_Yearly_netReturn);
+
+        const o_surplus = (yearOptimizedIncome * (1 - effectiveTaxRate)) - (currentSpending + yearCollegeDrag + currentYearlyDebtService);
+        o_Taxable += o_surplus;
     }
 
-    // Add Educational Wisdom
-    if (isSimplePath) {
-        explanations.push("JL Collins: Low-cost indexing strategy is actively reducing fee drag by ~0.75% annually.");
-    }
-
+    if (isSimplePath) explanations.push("JL Collins: Fee-drag reduction strategy active.");
     return { data, explanations };
 };
 
@@ -350,9 +580,108 @@ export const calculateMonteCarlo = (profile, iterations = 250) => {
     const allPaths = [];
     let successCount = 0;
 
+    // Aggregate Initial Wealth using same logic as Projection
     const safeFamily = Array.isArray(family) ? family : [];
     const isPrimaryUnit = safeFamily.some(m => m.relation === 'Self');
-    const totalLoans = (financials.liabilities?.mortgage || 0) + (financials.liabilities?.other || 0);
+
+    // Aggregated debt and real estate initial state
+    const clanPropertyDebts = [];
+    const clanRentalIncome = [];
+    const clanRentalExpenses = [];
+    let initial_b_Taxable = isPrimaryUnit ? (parseFloat(financials.assets?.taxable) || 0) : 0;
+    let initial_b_Deferred = isPrimaryUnit ? (parseFloat(financials.assets?.taxDeferred) || 0) : 0;
+    let initial_b_Free = isPrimaryUnit ? (parseFloat(financials.assets?.taxFree) || 0) : 0;
+
+    if (isPrimaryUnit) {
+        const re = financials.assets?.realEstate || [];
+        if (Array.isArray(re)) {
+            re.forEach(p => {
+                initial_b_Taxable += (parseFloat(p.value) || 0);
+                if (p.type === 'rental') {
+                    if (p.annualIncome) clanRentalIncome.push(parseFloat(p.annualIncome) || 0);
+                    const expenses = (parseFloat(p.propertyTax) || 0) + (parseFloat(p.managementFee) || 0);
+                    if (expenses) clanRentalExpenses.push(expenses);
+                }
+                if (p.mortgage) clanPropertyDebts.push({ balance: parseFloat(p.mortgage) || 0, rate: parseFloat(p.rate) || 0.04, term: parseInt(p.termYears) || 30 });
+            });
+        }
+
+        initial_b_Taxable += (parseFloat(financials.assets?.cash) || 0);
+
+        // Global Clan Positions
+        if (Array.isArray(financials.assets?.positions)) {
+            financials.assets.positions.forEach(pos => {
+                const val = parseFloat(pos.value) || 0;
+                if (pos.taxStatus === 'taxable' || !pos.taxStatus) initial_b_Taxable += val;
+                else if (pos.taxStatus === 'taxDeferred') initial_b_Deferred += val;
+                else if (pos.taxStatus === 'taxFree') initial_b_Free += val;
+            });
+        }
+    }
+
+    const memberPropertyDebts = [];
+    const memberRentalIncome = [];
+    const memberRentalExpenses = [];
+    safeFamily.forEach(m => {
+        if (m.financials) {
+            const f = m.financials;
+
+            // Assets Hierarchy
+            let memberAssetsAddedByHierarchy = false;
+
+            if (Array.isArray(f.positions) && f.positions.length > 0) {
+                f.positions.forEach(pos => {
+                    const val = parseFloat(pos.value) || 0;
+                    if (pos.taxStatus === 'taxDeferred') initial_b_Deferred += val;
+                    else if (pos.taxStatus === 'taxFree') initial_b_Free += val;
+                    else initial_b_Taxable += val;
+                });
+                memberAssetsAddedByHierarchy = true;
+            }
+
+            if (!memberAssetsAddedByHierarchy && ((parseFloat(f.stocks) || 0) > 0 || (parseFloat(f.retirement) || 0) > 0 || (parseFloat(f.taxFree) || 0) > 0)) {
+                initial_b_Taxable += (parseFloat(f.stocks) || 0);
+                initial_b_Deferred += (parseFloat(f.retirement) || 0);
+                initial_b_Free += (parseFloat(f.taxFree) || 0);
+                memberAssetsAddedByHierarchy = true;
+            }
+
+            // Fallback to taxBuckets
+            if (!memberAssetsAddedByHierarchy && f.taxBuckets) {
+                initial_b_Taxable += (parseFloat(f.taxBuckets.taxable) || 0);
+                initial_b_Deferred += (parseFloat(f.taxBuckets.taxDeferred) || 0);
+                initial_b_Free += (parseFloat(f.taxBuckets.taxFree) || 0);
+            }
+
+            initial_b_Taxable += (parseFloat(f.cash) || 0);
+
+            // Member Granular Real Estate
+            if (f.realEstate && Array.isArray(f.realEstate)) {
+                f.realEstate.forEach(p => {
+                    initial_b_Taxable += (parseFloat(p.value) || 0);
+                    if (p.type === 'rental') {
+                        if (p.annualIncome) memberRentalIncome.push(parseFloat(p.annualIncome) || 0);
+                        const expenses = (parseFloat(p.propertyTax) || 0) + (parseFloat(p.managementFee) || 0);
+                        if (expenses) memberRentalExpenses.push(expenses);
+                    }
+                    if (p.mortgage) memberPropertyDebts.push({ balance: parseFloat(p.mortgage) || 0, rate: parseFloat(p.rate) || 0.04, term: parseInt(p.termYears) || 30 });
+                });
+            }
+
+            // Member Granular Debts
+            if (Array.isArray(f.debts) && f.debts.length > 0) {
+                f.debts.forEach(debt => {
+                    memberPropertyDebts.push({ balance: parseFloat(debt.balance) || 0, rate: parseFloat(debt.rate) || 0.05, term: parseInt(debt.termYears) || 30 });
+                });
+            } else if (f.loans) {
+                memberPropertyDebts.push({ balance: parseFloat(f.loans) || 0, rate: 0.05, term: 10 });
+            }
+        }
+    });
+
+    const allDebts = [...clanPropertyDebts, ...memberPropertyDebts];
+    const totalRentalIncome = [...clanRentalIncome, ...memberRentalIncome].reduce((a, b) => a + b, 0);
+    const totalRentalExpenses = [...clanRentalExpenses, ...memberRentalExpenses].reduce((a, b) => a + b, 0);
 
     // Box-Muller transform for normal distribution
     const randn = () => {
@@ -375,26 +704,32 @@ export const calculateMonteCarlo = (profile, iterations = 250) => {
     const netMeanReturn = baseMarketReturn - activeFeeDrag;
 
     for (let i = 0; i < iterations; i++) {
-        let b_Taxable = isPrimaryUnit ? (financials.assets?.taxable || 0) : 0;
-        let b_Deferred = isPrimaryUnit ? (financials.assets?.taxDeferred || 0) : 0;
-        let b_Free = isPrimaryUnit ? (financials.assets?.taxFree || 0) : 0;
-
-        safeFamily.forEach(member => {
-            if (member.financials) {
-                const f = member.financials;
-                b_Taxable += (f.stocks || 0) + (f.realEstate || 0) + (f.cash || 0);
-                b_Deferred += (f.retirement || 0);
-                b_Free += (f.taxFree || 0);
-            }
-        });
+        let b_Taxable = initial_b_Taxable;
+        let b_Deferred = initial_b_Deferred;
+        let b_Free = initial_b_Free;
 
         const path = [];
-        const effectiveTaxRate = 0.28; // Avg effective tax rate
+        const effectiveTaxRate = financials.taxRate || 0.28;
         let failed = false;
 
         for (let year = 0; year <= years; year++) {
             const inflationFactor = Math.pow(1 + inflationRate, year);
-            const debt = Math.max(0, totalLoans - (year * 15000));
+
+            // Refined Debt Calculation (Amortized Principal)
+            const debt = allDebts.reduce((acc, d) => {
+                const P = d.balance || 0;
+                const r = d.rate || 0.05;
+                const n = d.term || 30;
+                if (year >= n) return acc;
+
+                let remaining;
+                if (r === 0) {
+                    remaining = P * (1 - year / n);
+                } else {
+                    remaining = P * (Math.pow(1 + r, n) - Math.pow(1 + r, year)) / (Math.pow(1 + r, n) - 1);
+                }
+                return acc + Math.max(0, remaining);
+            }, 0);
 
             // Random return each year
             const annualReturn = netMeanReturn + (stdDev * randn());
@@ -413,8 +748,8 @@ export const calculateMonteCarlo = (profile, iterations = 250) => {
                 }
 
                 // Milestones & Cashflow
-                let yearIncome = 0;
-                let yearSpending = 0;
+                let yearIncome = (parseFloat(financials.income) || 0) * Math.pow(1.02, year) + (totalRentalIncome - totalRentalExpenses) * inflationFactor;
+                let yearSpending = (parseFloat(financials.spending) || 0) * inflationFactor;
 
                 safeFamily.forEach(m => {
                     const age = (m.age || 0) + year;
@@ -448,7 +783,7 @@ export const calculateMonteCarlo = (profile, iterations = 250) => {
             p10: yearValues[Math.floor(iterations * 0.1)],
             p50: yearValues[Math.floor(iterations * 0.5)],
             p90: yearValues[Math.floor(iterations * 0.9)],
-            successRate: finalSuccessRate // Attach success rate to data
+            successRate: finalSuccessRate
         });
     }
 

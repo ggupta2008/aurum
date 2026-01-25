@@ -10,20 +10,13 @@ const RothConversionLadder = () => {
         targetMembers,
         scopedAge,
         scopedTaxBuckets,
-        scopedIncome
+        scopedIncome,
+        formatCurrency
     } = useScopedWealth();
     const [showMethodology, setShowMethodology] = useState(false);
     const [targetBracket, setTargetBracket] = useState(0.24); // Default: Fill to top of 24% bracket
     const [startAge, setStartAge] = useState(60); // When to start conversions
     const [endAge, setEndAge] = useState(72); // When to stop (before RMDs at 73)
-
-    const formatCurrency = (v) => new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        maximumFractionDigits: 0,
-        notation: 'compact'
-    }).format(v);
-
     // 2024 Federal Tax Brackets (MFJ)
     const TAX_BRACKETS_MFJ = [
         { rate: 0.10, min: 0, max: 22000, label: '10%' },
@@ -283,7 +276,7 @@ const RothConversionLadder = () => {
                         <option value={0.32}>32% (Very Aggressive)</option>
                     </select>
                     <p style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))', marginTop: '0.5rem' }}>
-                        Up to {formatCurrency(bracketCeiling)} taxable income
+                        Up to {formatCurrency(bracketCeiling, { notation: 'compact' })} taxable income
                     </p>
                 </div>
 
@@ -347,7 +340,7 @@ const RothConversionLadder = () => {
                         Total Conversions
                     </div>
                     <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'hsl(var(--gold-primary))' }}>
-                        {formatCurrency(totalConversions)}
+                        {formatCurrency(totalConversions, { notation: 'compact' })}
                     </div>
                     <div style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))', marginTop: '0.25rem' }}>
                         Over {activeYears.length} years
@@ -364,7 +357,7 @@ const RothConversionLadder = () => {
                         Tax Paid Now
                     </div>
                     <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'hsl(var(--danger))' }}>
-                        {formatCurrency(totalTaxPaid)}
+                        {formatCurrency(totalTaxPaid, { notation: 'compact' })}
                     </div>
                     <div style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))', marginTop: '0.25rem' }}>
                         Avg {(totalTaxPaid / Math.max(totalConversions, 1) * 100).toFixed(1)}% effective rate
@@ -381,7 +374,7 @@ const RothConversionLadder = () => {
                         Future Savings
                     </div>
                     <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'hsl(var(--success))' }}>
-                        {formatCurrency(futureSavings)}
+                        {formatCurrency(futureSavings, { notation: 'compact' })}
                     </div>
                     <div style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))', marginTop: '0.25rem' }}>
                         {roi.toFixed(0)}% ROI on tax paid
@@ -448,19 +441,19 @@ const RothConversionLadder = () => {
                                     <td style={{ padding: '0.75rem', color: 'hsl(var(--text-primary))' }}>{schedule.year}</td>
                                     <td style={{ padding: '0.75rem', color: 'hsl(var(--text-primary))' }}>{schedule.age}</td>
                                     <td style={{ padding: '0.75rem', textAlign: 'right', color: 'hsl(var(--text-secondary))' }}>
-                                        {formatCurrency(schedule.baseIncome)}
+                                        {formatCurrency(schedule.baseIncome, { notation: 'compact' })}
                                     </td>
                                     <td style={{ padding: '0.75rem', textAlign: 'right', color: 'hsl(var(--gold-primary))', fontWeight: 600 }}>
-                                        {schedule.conversionAmount > 1000 ? formatCurrency(schedule.conversionAmount) : '—'}
+                                        {schedule.conversionAmount > 1000 ? formatCurrency(schedule.conversionAmount, { notation: 'compact' }) : '—'}
                                     </td>
                                     <td style={{ padding: '0.75rem', textAlign: 'right', color: 'hsl(var(--danger))' }}>
-                                        {schedule.taxOnConversion > 100 ? formatCurrency(schedule.taxOnConversion) : '—'}
+                                        {schedule.taxOnConversion > 100 ? formatCurrency(schedule.taxOnConversion, { notation: 'compact' }) : '—'}
                                     </td>
                                     <td style={{ padding: '0.75rem', textAlign: 'right', color: 'hsl(var(--text-secondary))' }}>
                                         {schedule.effectiveRate > 0 ? `${(schedule.effectiveRate * 100).toFixed(1)}%` : '—'}
                                     </td>
                                     <td style={{ padding: '0.75rem', textAlign: 'right', color: 'hsl(var(--text-muted))' }}>
-                                        {formatCurrency(schedule.remainingBalance)}
+                                        {formatCurrency(schedule.remainingBalance, { notation: 'compact' })}
                                     </td>
                                 </tr>
                             ))}
@@ -485,9 +478,9 @@ const RothConversionLadder = () => {
                                 💎 High-Value Opportunity Detected
                             </h4>
                             <p style={{ margin: 0, fontSize: '0.875rem', color: 'hsl(var(--text-secondary))', lineHeight: '1.6' }}>
-                                By converting <strong style={{ color: 'hsl(var(--gold-primary))' }}>{formatCurrency(avgAnnualConversion)}/year</strong> from
-                                age {startAge} to {endAge}, you'll pay <strong>{formatCurrency(totalTaxPaid)}</strong> in taxes now but
-                                save <strong style={{ color: 'hsl(var(--success))' }}>{formatCurrency(futureSavings)}</strong> in future RMD taxes.
+                                By converting <strong style={{ color: 'hsl(var(--gold-primary))' }}>{formatCurrency(avgAnnualConversion, { notation: 'compact' })}/year</strong> from
+                                age {startAge} to {endAge}, you'll pay <strong>{formatCurrency(totalTaxPaid, { notation: 'compact' })}</strong> in taxes now but
+                                save <strong style={{ color: 'hsl(var(--success))' }}>{formatCurrency(futureSavings, { notation: 'compact' })}</strong> in future RMD taxes.
                                 This strategy breaks even at age {breakEvenAge} and delivers a <strong>{roi.toFixed(0)}% ROI</strong> on
                                 every tax dollar paid.
                             </p>

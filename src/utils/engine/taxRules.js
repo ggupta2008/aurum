@@ -106,11 +106,13 @@ export const getUnitFinancials = (unit, householdBase = null) => {
         aggregate.income += (f.income || 0);
         aggregate.stocks += (f.stocks || 0);
         aggregate.retirement += (f.retirement || 0);
-        aggregate.realEstate += (f.realEstate || 0);
+
+        const reVal = Array.isArray(f.realEstate) ? f.realEstate.reduce((acc, p) => acc + (p.value || 0), 0) : (f.realEstate || 0);
+        aggregate.realEstate += reVal;
         aggregate.cash += (f.cash || 0);
         aggregate.loans += (f.loans || 0);
 
-        aggregate.taxBuckets.taxable += (f.stocks || 0) + (f.realEstate || 0) + (f.cash || 0);
+        aggregate.taxBuckets.taxable += (f.stocks || 0) + reVal + (f.cash || 0);
         aggregate.taxBuckets.taxDeferred += (f.retirement || 0);
     });
 

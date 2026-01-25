@@ -142,8 +142,7 @@ export const createNewClient = (name = 'New Client', initialProfile = null) => {
                 stocks: 0,
                 retirement: 0,
                 realEstate: 0,
-                cash: 0,
-                loans: 0
+                cash: 0
             }
         }],
         financials: {

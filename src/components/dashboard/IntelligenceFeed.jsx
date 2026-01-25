@@ -1,6 +1,6 @@
 import React from 'react';
 import { useScopedWealth } from '../../hooks/useScopedWealth';
-import { Zap, TrendingUp, ShieldAlert, Sparkles } from 'lucide-react';
+import { Zap, TrendingUp, ShieldAlert, Sparkles, Landmark } from 'lucide-react';
 
 const IntelligenceFeed = () => {
     const { recommendations, scopedProjection, profile } = useScopedWealth();
@@ -8,9 +8,9 @@ const IntelligenceFeed = () => {
     const insights = [
         ...recommendations.map(r => ({
             type: 'strategy',
-            icon: Sparkles,
+            icon: r.id === 'social_security' ? Landmark : Sparkles,
             color: 'hsl(var(--gold-primary))',
-            title: 'Strategy Alpha',
+            title: r.title || 'Strategy Alpha',
             text: r.reason
         })),
         {
@@ -34,6 +34,29 @@ const IntelligenceFeed = () => {
                 color: 'hsl(var(--success))',
                 title: 'Conversion Alpha',
                 text: 'Systematic Roth conversions are projected to increase net legacy by >50%.'
+            });
+        }
+
+        // Passive Income Insight
+        let totalAnnDiv = 0;
+        let totalAnnSpend = 0;
+        const safeFamilyFeed = Array.isArray(profile.family) ? profile.family : [];
+        safeFamilyFeed.forEach(m => {
+            totalAnnSpend += (m.financials?.spending || 0);
+            if (m.financials?.positions && Array.isArray(m.financials.positions)) {
+                m.financials.positions.forEach(pos => {
+                    totalAnnDiv += (pos.value || 0) * (pos.dividendYield || 0);
+                });
+            }
+        });
+
+        if (totalAnnDiv > totalAnnSpend * 0.3) {
+            insights.unshift({
+                type: 'milestone',
+                icon: TrendingUp,
+                color: 'hsl(var(--gold-warm))',
+                title: 'Passive Pillar Achievement',
+                text: `Passive dividend income currently handles ${Math.round((totalAnnDiv / totalAnnSpend) * 100)}% of your annual lifestyle burn.`
             });
         }
     }

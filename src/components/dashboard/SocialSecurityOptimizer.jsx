@@ -1,276 +1,203 @@
 import React, { useState } from 'react';
 import { useScopedWealth } from '../../hooks/useScopedWealth';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, Legend } from 'recharts';
-import { Clock, TrendingUp, DollarSign, AlertCircle, Info, X } from 'lucide-react';
+import { calculateBenefitFactor, findBreakevenAge } from '../../utils/engine/socialSecurityRules';
+import { TrendingUp, Landmark, ShieldCheck, Calendar, Info, Target, AlertCircle } from 'lucide-react';
 
 const SocialSecurityOptimizer = () => {
-    const { profile, planningScope, scopedAge } = useScopedWealth();
-    const [showMethodology, setShowMethodology] = useState(false);
+    const { profile, formatCurrency, updateStrategyInput, toggleStrategy } = useScopedWealth();
+    const [showInfo, setShowInfo] = useState(false);
 
-    const formatCurrency = (v) => new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        maximumFractionDigits: 0,
-        notation: 'compact'
-    }).format(v);
+    const ssStrategy = profile.strategies?.['social_security'] || { active: false, inputs: { claimAge: 67, estimatedPIA: 3000 } };
+    const { claimAge = 67, estimatedPIA = 3000 } = ssStrategy.inputs || {};
 
-    // Get primary age from hook
-    const currentAge = scopedAge;
+    const ages = [62, 63, 64, 65, 66, 67, 68, 69, 70];
+    const data = ages.map(age => ({
+        age,
+        monthly: estimatedPIA * calculateBenefitFactor(age),
+        annual: estimatedPIA * 12 * calculateBenefitFactor(age)
+    }));
 
-    // Base PIA (Primary Insurance Amount) estimate - standard high earner estimate
-    // In a real app, this would come from the profile inputs
-    const estimatedPIA = 3800; // Monthly benefit at Full Retirement Age (67) in today's dollars
+    const currentMonthly = estimatedPIA * calculateBenefitFactor(claimAge);
 
-    // Inflation / COLA assumption
-    const colaRate = 0.025; // 2.5% annual Cost of Living Adjustment
-
-    // Strategy Logic
-    // 1. Early (62): 70% of PIA
-    // 2. FRA (67): 100% of PIA
-    // 3. Delayed (70): 124% of PIA (8% annual credits)
-
-    const strategies = [
-        { id: 'early', age: 62, label: 'Early (62)', pct: 0.70, color: 'hsl(var(--text-muted))' },
-        { id: 'fra', age: 67, label: 'Full Age (67)', pct: 1.00, color: 'hsl(var(--info))' },
-        { id: 'delayed', age: 70, label: 'Max Delayed (70)', pct: 1.24, color: 'hsl(var(--gold-primary))' }
-    ];
-
-    // Calculate projection data
-    // We project from age 62 up to age 95
-    const data = [];
-    const maxAge = 90;
-
-    // Calculate cumulative benefits
-    let cumulativeEarly = 0;
-    let cumulativeFRA = 0;
-    let cumulativeDelayed = 0;
-
-    // Breakeven tracking
-    let breakevenFRA = null;     // When FRA beats Early
-    let breakevenDelayed = null; // When Delayed beats FRA
-
-    for (let age = 62; age <= maxAge; age++) {
-        const yearsFromNow = age - currentAge;
-        // Adjust nominal benefit for inflation up to that specific year
-        // Note: For simplicity in comparison, we plot "Today's Purchasing Power" 
-        // effectively assuming benefits grow with inflation, so we keep standard dollars for the chart Y-axis
-        // to make it easier to understand "real" value.
-
-        // Annual benefit amounts (Real value)
-        const annualEarly = age >= 62 ? (estimatedPIA * 0.70 * 12) : 0;
-        const annualFRA = age >= 67 ? (estimatedPIA * 1.00 * 12) : 0;
-        const annualDelayed = age >= 70 ? (estimatedPIA * 1.24 * 12) : 0;
-
-        cumulativeEarly += annualEarly;
-        cumulativeFRA += annualFRA;
-        cumulativeDelayed += annualDelayed;
-
-        // Detect breakeven points
-        if (!breakevenFRA && cumulativeFRA > cumulativeEarly) breakevenFRA = age;
-        if (!breakevenDelayed && cumulativeDelayed > cumulativeFRA) breakevenDelayed = age;
-
-        data.push({
-            age,
-            early: cumulativeEarly,
-            fra: cumulativeFRA,
-            delayed: cumulativeDelayed
-        });
-    }
-
-    // Recommendation Logic
-    // If user is expected to live past breakevenDelayed (80), recommend delaying
-    const longevityExpectancy = 85; // Standard conservative planning age
-    const optimalStrategy = longevityExpectancy > (breakevenDelayed || 80) ? strategies[2] : strategies[0];
-    const benefitDiff = (data[data.length - 1].delayed - data[data.length - 1].early);
+    // Compare selected age vs early (62) and vs FRA (67)
+    const vs62 = findBreakevenAge(estimatedPIA, 62, claimAge);
+    const vs67 = findBreakevenAge(estimatedPIA, 67, claimAge);
 
     return (
-        <div className="glass-panel anim-fade-up anim-delay-5" style={{
-            padding: 'var(--space-5)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 'var(--space-4)',
-            position: 'relative',
-            // Allow this component to span 2 columns if in a grid
-            gridColumn: 'span 1'
-        }}>
-            {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                    <h3 style={{
-                        fontSize: '1.1rem',
-                        fontWeight: 600,
-                        marginBottom: 'var(--space-1)'
-                    }}>
+        <div className="glass-panel anim-fade-up anim-delay-3" style={{ padding: 'var(--space-5)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                    <Landmark size={18} className="text-gold" />
+                    <h3 style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'hsl(var(--text-muted))' }}>
                         Social Security Optimizer
                     </h3>
-                    <p style={{
-                        fontSize: '0.8rem',
-                        color: 'hsl(var(--text-muted))'
-                    }}>
-                        Claiming strategy comparison & breakeven analysis
-                    </p>
                 </div>
                 <button
-                    onClick={() => setShowMethodology(!showMethodology)}
-                    style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: 'hsl(var(--text-dim))',
-                        cursor: 'pointer',
-                        padding: '4px'
-                    }}
+                    onClick={() => setShowInfo(!showInfo)}
+                    className="nav-btn"
+                    style={{ padding: '4px', borderRadius: '6px' }}
                 >
-                    <Info size={16} />
+                    <Info size={14} />
                 </button>
             </div>
 
-            {/* Methodology Modal */}
-            {showMethodology && (
-                <div
-                    className="glass-panel"
-                    style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        zIndex: 100,
-                        background: 'hsl(var(--bg-void))',
-                        padding: 'var(--space-6)',
-                        border: '1px solid hsla(var(--gold-primary) / 0.2)',
-                        boxShadow: '0 20px 50px rgba(0,0,0,0.8)'
-                    }}
-                >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
-                        <h4 style={{ color: 'hsl(var(--gold-primary))', textTransform: 'uppercase', fontSize: '0.8rem', letterSpacing: '0.1em' }}>
-                            Calculation Methodology
-                        </h4>
-                        <button onClick={() => setShowMethodology(false)} style={{ background: 'transparent', border: 'none', color: 'hsl(var(--text-dim))', cursor: 'pointer' }}>
-                            <X size={18} />
-                        </button>
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))', lineHeight: 1.6 }}>
-                        <p style={{ marginBottom: '12px' }}>
-                            <strong>Benefit Assumptions:</strong> Based on an estimated Primary Insurance Amount (PIA) of {formatCurrency(estimatedPIA)}/mo at Full Retirement Age (67).
-                        </p>
-                        <p style={{ marginBottom: '12px' }}>
-                            <strong>Adjustments:</strong>
-                            <br />• Claim at 62: 70% of PIA (Permanent penalty)
-                            <br />• Claim at 67: 100% of PIA (Full benefit)
-                            <br />• Claim at 70: 124% of PIA (8% annual Delayed Retirement Credits)
-                        </p>
-                        <p>
-                            <strong>Breakeven:</strong> The age at which total cumulative benefits from delaying exceed the cumulative benefits of claiming early. If you live past this age, delaying pays off.
-                        </p>
-                    </div>
+            {showInfo && (
+                <div className="anim-fade-up" style={{
+                    background: 'hsla(var(--gold-primary) / 0.05)',
+                    padding: 'var(--space-3)',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid hsla(var(--gold-primary) / 0.1)',
+                    marginBottom: 'var(--space-4)',
+                    fontSize: '0.7rem',
+                    color: 'hsl(var(--text-secondary))',
+                    lineHeight: 1.5
+                }}>
+                    <p style={{ marginBottom: '8px' }}><strong>Longevity Insurance:</strong> Social Security is one of the only guaranteed, inflation-indexed income streams available.</p>
+                    <p style={{ marginBottom: '4px' }}>• <strong>Early (62):</strong> Lifetime reduction of ~30% in monthly benefits.</p>
+                    <p style={{ marginBottom: '4px' }}>• <strong>Delayed (70):</strong> Guaranteed 8% increase per year delayed after 67.</p>
+                    <p>• <strong>Strategy:</strong> High earners often benefit from delaying to 70 to maximize survivor benefits and hedge against living past 80.</p>
                 </div>
             )}
 
-            {/* Strategy Cards */}
-            <div style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr 1fr',
-                gap: 'var(--space-3)'
-            }}>
-                {strategies.map((s) => (
-                    <div key={s.id} style={{
-                        padding: 'var(--space-3)',
-                        background: optimalStrategy.id === s.id ? 'hsla(var(--gold-primary) / 0.1)' : 'hsla(var(--bg-void) / 0.4)',
-                        border: optimalStrategy.id === s.id ? '1px solid hsla(var(--gold-primary) / 0.3)' : '1px solid hsla(var(--text-primary) / 0.1)',
-                        borderRadius: 'var(--radius-md)',
-                        textAlign: 'center'
-                    }}>
-                        <div style={{ fontSize: '0.65rem', color: 'hsl(var(--text-muted))', marginBottom: '4px' }}>
-                            {s.label}
+            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 'var(--space-6)' }}>
+                {/* Controls & Metrics */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+                        <div className="glass-panel" style={{ padding: 'var(--space-3)', background: 'hsla(var(--bg-void) / 0.4)' }}>
+                            <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'hsl(var(--text-dim))', marginBottom: '4px' }}>Claiming Age</div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <input
+                                    type="range"
+                                    min="62"
+                                    max="70"
+                                    step="1"
+                                    value={claimAge}
+                                    onChange={(e) => updateStrategyInput('social_security', 'claimAge', e.target.value)}
+                                    style={{ flex: 1, accentColor: 'hsl(var(--gold-primary))' }}
+                                />
+                                <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'white' }}>{claimAge}</span>
+                            </div>
                         </div>
-                        <div style={{ fontSize: '1.1rem', fontWeight: 700, color: optimalStrategy.id === s.id ? 'hsl(var(--gold-primary))' : 'white' }}>
-                            {formatCurrency(estimatedPIA * s.pct)}
-                            <span style={{ fontSize: '0.7rem', fontWeight: 500, color: 'hsl(var(--text-dim))' }}>/mo</span>
+
+                        <div className="glass-panel" style={{ padding: 'var(--space-3)', background: 'hsla(var(--bg-void) / 0.4)' }}>
+                            <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'hsl(var(--text-dim))', marginBottom: '4px' }}>PIA (at 67)</div>
+                            <input
+                                type="number"
+                                value={estimatedPIA}
+                                onChange={(e) => updateStrategyInput('social_security', 'estimatedPIA', e.target.value)}
+                                style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    borderBottom: '1px solid hsla(var(--text-primary) / 0.1)',
+                                    color: 'white',
+                                    fontSize: '1rem',
+                                    fontWeight: 700,
+                                    width: '100%',
+                                    outline: 'none'
+                                }}
+                            />
                         </div>
                     </div>
-                ))}
-            </div>
 
-            {/* Breakeven Chart */}
-            <div style={{ height: '200px', width: '100%', marginTop: 'var(--space-2)' }}>
-                <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                        <XAxis
-                            dataKey="age"
-                            stroke="hsla(var(--text-muted) / 0.5)"
-                            fontSize={10}
-                            tickLine={false}
-                            domain={[62, 90]}
-                            type="number"
-                        />
-                        <YAxis
-                            hide={true}
-                        />
-                        <Tooltip
-                            contentStyle={{
-                                backgroundColor: 'hsl(var(--bg-elevated))',
-                                border: '1px solid hsla(var(--gold-primary) / 0.1)',
-                                borderRadius: 'var(--radius-md)',
-                                fontSize: '0.75rem'
-                            }}
-                            formatter={(value) => formatCurrency(value)}
-                            labelFormatter={(label) => `Age ${label} `}
-                        />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                            <span style={{ fontSize: '0.8rem', color: 'hsl(var(--text-muted))' }}>Monthly Benefit</span>
+                            <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'hsl(var(--gold-primary))' }}>
+                                {formatCurrency(currentMonthly)}
+                            </span>
+                        </div>
+                        <div style={{ height: '4px', background: 'hsla(var(--text-primary) / 0.05)', borderRadius: '2px', overflow: 'hidden' }}>
+                            <div style={{
+                                height: '100%',
+                                width: `${(calculateBenefitFactor(claimAge) / 1.24) * 100}%`,
+                                background: 'linear-gradient(90deg, hsl(var(--gold-primary)), hsl(var(--gold-warm)))',
+                                borderRadius: '2px'
+                            }} />
+                        </div>
+                    </div>
 
-                        {/* Reference Lines for Breakeven */}
-                        {breakevenDelayed && (
-                            <ReferenceLine x={breakevenDelayed} stroke="hsl(var(--text-dim))" strokeDasharray="3 3">
-                                {/* Label handled by custom legend or context */}
-                            </ReferenceLine>
-                        )}
-
-                        <Line
-                            type="monotone"
-                            dataKey="early"
-                            stroke={strategies[0].color}
-                            strokeWidth={2}
-                            dot={false}
-                            name="Claim at 62"
-                        />
-                        <Line
-                            type="monotone"
-                            dataKey="fra"
-                            stroke={strategies[1].color}
-                            strokeWidth={2}
-                            dot={false}
-                            name="Claim at 67"
-                        />
-                        <Line
-                            type="monotone"
-                            dataKey="delayed"
-                            stroke={strategies[2].color}
-                            strokeWidth={3}
-                            dot={false}
-                            name="Claim at 70"
-                        />
-                    </LineChart>
-                </ResponsiveContainer>
-            </div>
-
-            {/* Insight & Recommendation */}
-            <div style={{
-                padding: 'var(--space-4)',
-                background: 'hsla(var(--gold-primary) / 0.05)',
-                borderRadius: 'var(--radius-md)',
-                border: '1px solid hsla(var(--gold-primary) / 0.2)',
-                marginTop: 'var(--space-2)'
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-2)' }}>
-                    <Clock size={16} className="text-gold" />
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'hsl(var(--gold-primary))', textTransform: 'uppercase' }}>
-                        The 8% Guarantee
-                    </span>
+                    {/* Breakeven Analysis */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                        <h4 style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'hsl(var(--text-dim))', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Target size={12} /> Strategy Breakeven
+                        </h4>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+                            <div style={{ padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', background: 'hsla(var(--text-primary) / 0.03)', border: '1px solid hsla(var(--text-primary) / 0.05)' }}>
+                                <div style={{ fontSize: '0.6rem', color: 'hsl(var(--text-dim))', marginBottom: '4px' }}>vs Age 62</div>
+                                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white' }}>{vs62 ? `Age ${vs62}` : 'Immediate'}</div>
+                            </div>
+                            <div style={{ padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', background: 'hsla(var(--text-primary) / 0.03)', border: '1px solid hsla(var(--text-primary) / 0.05)' }}>
+                                <div style={{ fontSize: '0.6rem', color: 'hsl(var(--text-dim))', marginBottom: '4px' }}>vs Age 67</div>
+                                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white' }}>{vs67 ? `Age ${vs67}` : 'N/A'}</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <p style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))', lineHeight: 1.5 }}>
-                    Strategy: <strong>Delay to 70.</strong>
-                    <br />
-                    While claiming early gets you money sooner, the "crossover point" is age <strong>{breakevenDelayed}</strong>.
-                    If you live to 90, claiming at 70 generates an extra <strong>{formatCurrency(benefitDiff)}</strong> in lifetime wealth—risk free.
-                </p>
+
+                {/* Growth Visualization */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {data.map(item => (
+                            <div key={item.age} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <span style={{
+                                    fontSize: '0.7rem',
+                                    width: '24px',
+                                    color: item.age === claimAge ? 'hsl(var(--gold-primary))' : 'hsl(var(--text-dim))',
+                                    fontWeight: item.age === claimAge ? 800 : 400
+                                }}>
+                                    {item.age}
+                                </span>
+                                <div style={{
+                                    flex: 1,
+                                    height: '16px',
+                                    background: 'hsla(var(--text-primary) / 0.03)',
+                                    borderRadius: '4px',
+                                    position: 'relative',
+                                    overflow: 'hidden'
+                                }}>
+                                    <div style={{
+                                        position: 'absolute',
+                                        left: 0,
+                                        top: 0,
+                                        height: '100%',
+                                        width: `${(calculateBenefitFactor(item.age) / 1.24) * 100}%`,
+                                        background: item.age === claimAge ? 'hsla(var(--gold-primary) / 0.6)' : 'hsla(var(--text-primary) / 0.1)',
+                                        transition: 'all 0.3s ease'
+                                    }} />
+                                    <div style={{
+                                        position: 'absolute',
+                                        right: '8px',
+                                        top: '50%',
+                                        transform: 'translateY(-50%)',
+                                        fontSize: '0.6rem',
+                                        fontWeight: 700,
+                                        color: item.age === claimAge ? 'white' : 'hsl(var(--text-dim))'
+                                    }}>
+                                        {Math.round(calculateBenefitFactor(item.age) * 100)}%
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div style={{
+                        marginTop: 'var(--space-2)',
+                        padding: 'var(--space-3)',
+                        borderRadius: 'var(--radius-md)',
+                        background: 'hsla(var(--success) / 0.05)',
+                        border: '1px solid hsla(var(--success) / 0.1)',
+                        display: 'flex',
+                        gap: '10px'
+                    }}>
+                        <ShieldCheck size={16} className="text-success" style={{ flexShrink: 0 }} />
+                        <p style={{ fontSize: '0.65rem', color: 'hsl(var(--text-secondary))', lineHeight: 1.4, margin: 0 }}>
+                            {claimAge > 67
+                                ? `By delaying to ${claimAge}, you gain ${Math.round((calculateBenefitFactor(claimAge) - 1) * 100)}% in guaranteed monthly income compared to your full retirement benefit.`
+                                : `Claiming at ${claimAge} provides early cash flow, but your monthly benefit is ${Math.round((1 - calculateBenefitFactor(claimAge)) * 100)}% lower than FRA.`
+                            }
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
     );

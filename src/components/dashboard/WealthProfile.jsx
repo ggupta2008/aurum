@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useScopedWealth } from '../../hooks/useScopedWealth';
 import { ChevronDown, ChevronUp, DollarSign, Wallet, Shield, Lock, Info } from 'lucide-react';
 
-const StatRow = ({ label, value, icon: Icon, colorClass }) => (
+const StatRow = ({ label, value, icon: Icon, colorClass, formatCurrency }) => (
     <div style={{ marginBottom: 'var(--space-3)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -12,14 +12,14 @@ const StatRow = ({ label, value, icon: Icon, colorClass }) => (
                 </span>
             </div>
             <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'white' }}>
-                {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0, notation: 'compact' }).format(value)}
+                {formatCurrency(value, { notation: 'compact' })}
             </span>
         </div>
     </div>
 );
 
 const WealthProfile = () => {
-    const { scopedTaxBuckets, planningScope } = useScopedWealth();
+    const { scopedTaxBuckets, planningScope, formatCurrency } = useScopedWealth();
     const [isOpen, setIsOpen] = useState(true);
     const [showInfo, setShowInfo] = useState(false);
 
@@ -88,17 +88,20 @@ const WealthProfile = () => {
                             label="Taxable (Leaky)"
                             value={totalTaxable}
                             icon={DollarSign}
+                            formatCurrency={formatCurrency}
                         />
                         <StatRow
                             label="Deferred (Bomb)"
                             value={totalDeferred}
                             icon={Lock}
+                            formatCurrency={formatCurrency}
                         />
                         <StatRow
                             label="Tax-Free (Safe)"
                             value={totalFree}
                             icon={Shield}
                             colorClass="text-gold"
+                            formatCurrency={formatCurrency}
                         />
 
                         <div style={{

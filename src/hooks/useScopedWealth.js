@@ -8,7 +8,8 @@ import {
     getScopedSpending,
     getScopedIncome,
     getScopedProjection,
-    getScopedMonteCarlo
+    getScopedMonteCarlo,
+    getWealthBreakdown
 } from '../utils/engine/scopeLogic';
 
 /**
@@ -29,14 +30,17 @@ export const useScopedWealth = () => {
     const scopedCurrentWealth = getScopedCurrentWealth(profile, targetMembers);
     const scopedTaxBuckets = getScopedTaxBuckets(profile, targetMembers);
     const scopedAge = getScopedAge(targetMembers, planningScope);
-    const scopedSpending = getScopedSpending(targetMembers);
-    const scopedIncome = getScopedIncome(targetMembers);
+    const scopedSpending = getScopedSpending(profile, targetMembers);
+    const scopedIncome = getScopedIncome(profile, targetMembers);
 
     // 4. Transform projections by applying the scope ratio
     const scopedProjection = getScopedProjection(projection, scopeRatio);
 
     // 5. Transform Monte Carlo data
     const scopedMonteCarlo = getScopedMonteCarlo(wealth.monteCarlo, scopeRatio);
+
+    // 6. Get detailed wealth breakdown
+    const wealthBreakdown = getWealthBreakdown(profile, targetMembers);
 
     return {
         ...wealth,
@@ -49,6 +53,7 @@ export const useScopedWealth = () => {
         scopedIncome,
         scopedProjection,
         scopedMonteCarlo,
+        wealthBreakdown,
         // Provide the primary member of this specific scope
         primaryMember: targetMembers.find(m => m.relation === 'Self') || targetMembers[0]
     };

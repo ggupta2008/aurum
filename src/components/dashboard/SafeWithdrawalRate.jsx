@@ -9,7 +9,8 @@ const SafeWithdrawalRate = () => {
         planningScope,
         scopedCurrentWealth,
         scopedAge,
-        scopedSpending
+        scopedSpending,
+        formatCurrency
     } = useScopedWealth();
     const { data } = scopedProjection;
 
@@ -25,12 +26,6 @@ const SafeWithdrawalRate = () => {
             </div>
         );
     }
-
-    const formatCurrency = (v) => new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        maximumFractionDigits: 0
-    }).format(v);
 
     // CALCULATE SCOPED PORTFOLIO & SPENDING from hook
     const currentPortfolio = scopedCurrentWealth;
@@ -114,7 +109,7 @@ const SafeWithdrawalRate = () => {
                     color: 'hsl(var(--gold-primary))',
                     marginBottom: 'var(--space-1)'
                 }}>
-                    {formatCurrency(safeWithdrawal)}
+                    {formatCurrency(safeWithdrawal, { notation: 'compact' })}
                 </div>
                 <div style={{
                     fontSize: '0.85rem',
@@ -203,8 +198,8 @@ const SafeWithdrawalRate = () => {
                             color: 'hsl(var(--text-secondary))',
                             lineHeight: 1.5
                         }}>
-                            Your current portfolio of <strong>{formatCurrency(currentPortfolio)}</strong> can sustainably support
-                            your spending of <strong>{formatCurrency(currentSpending)}/year</strong> with a {(adjustedSWR * 100).toFixed(1)}% withdrawal rate.
+                            Your current portfolio of <strong>{formatCurrency(currentPortfolio, { notation: 'compact' })}</strong> can sustainably support
+                            your spending of <strong>{formatCurrency(currentSpending, { notation: 'compact' })}/year</strong> with a {(adjustedSWR * 100).toFixed(1)}% withdrawal rate.
                         </p>
                     </div>
                 </div>
@@ -233,10 +228,10 @@ const SafeWithdrawalRate = () => {
                             color: 'hsl(var(--text-secondary))',
                             lineHeight: 1.5
                         }}>
-                            To support your current spending of <strong>{formatCurrency(currentSpending)}/year</strong>,
-                            you need <strong>{formatCurrency(requiredPortfolio)}</strong>.
-                            You're <strong>{formatCurrency(needsMore)}</strong> short.
-                            Continue saving or reduce spending to {formatCurrency(safeWithdrawal)}/year.
+                            To support your current spending of <strong>{formatCurrency(currentSpending, { notation: 'compact' })}/year</strong>,
+                            you need <strong>{formatCurrency(requiredPortfolio, { notation: 'compact' })}</strong>.
+                            You're <strong>{formatCurrency(needsMore, { notation: 'compact' })}</strong> short.
+                            Continue saving or reduce spending to {formatCurrency(safeWithdrawal, { notation: 'compact' })}/year.
                         </p>
                     </div>
                 </div>

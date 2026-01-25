@@ -10,7 +10,8 @@ const TaxWaterfall = () => {
         targetMembers,
         scopedTaxBuckets,
         scopedAge,
-        primaryMember
+        primaryMember,
+        formatCurrency
     } = useScopedWealth();
     const { data } = scopedProjection;
 
@@ -26,13 +27,6 @@ const TaxWaterfall = () => {
             </div>
         );
     }
-
-    const formatCurrency = (v) => new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        notation: 'compact',
-        maximumFractionDigits: 1
-    }).format(v);
 
     // Get terminal wealth (Year 25) - Already scoped by hook
     const grossWealth = data[data.length - 1]?.optimized || 0;
@@ -155,7 +149,7 @@ const TaxWaterfall = () => {
                                     fontWeight: 700,
                                     color: item.isPositive ? 'white' : item.color
                                 }}>
-                                    {item.isPositive ? formatCurrency(item.value) : formatCurrency(Math.abs(item.value))}
+                                    {item.isPositive ? formatCurrency(item.value, { notation: 'compact', maximumFractionDigits: 1 }) : formatCurrency(Math.abs(item.value), { notation: 'compact', maximumFractionDigits: 1 })}
                                 </span>
                             </div>
                             <div style={{

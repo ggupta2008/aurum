@@ -12,12 +12,20 @@ import {
     duplicateClient,
     migrateLegacyData
 } from '../utils/clientManager';
+import { performFullMigration } from '../utils/dataMigration';
 
 const WealthContext = createContext();
 
 export const WealthProvider = ({ children }) => {
     // Multi-client state
     const [currentClientId, setCurrentClientIdState] = useState(() => {
+        // Run full migration to ensure data integrity
+        try {
+            performFullMigration();
+        } catch (error) {
+            console.error('Migration error:', error);
+        }
+
         // Try to migrate legacy data on first load
         const migration = migrateLegacyData();
         if (migration.migrated) {
@@ -36,13 +44,38 @@ export const WealthProvider = ({ children }) => {
 
     const [profile, setProfile] = useState(() => {
         const clientData = getClient(currentClientId);
-        return clientData || INITIAL_PROFILE;
+        const p = clientData || INITIAL_PROFILE;
+
+        // --- SANITY CHECK & REAL-TIME MIGRATION ---
+        if (p.family && Array.isArray(p.family)) {
+            p.family = p.family.map(m => {
+                if (m.financials) {
+                    if (typeof m.financials.realEstate === 'number') {
+                        const val = m.financials.realEstate;
+                        m.financials.realEstate = val > 0 ? [{ id: Date.now(), name: 'Legacy Asset', type: 'primary', value: val, mortgage: 0, rate: 0.04, termYears: 30 }] : [];
+                    }
+                    if (!Array.isArray(m.financials.positions)) m.financials.positions = [];
+                    if (!Array.isArray(m.financials.debts)) m.financials.debts = [];
+                }
+                return m;
+            });
+        }
+        if (p.financials?.assets) {
+            if (typeof p.financials.assets.realEstate === 'number') {
+                const val = p.financials.assets.realEstate;
+                p.financials.assets.realEstate = val > 0 ? [{ id: Date.now(), name: 'Legacy Household asset', type: 'primary', value: val, mortgage: 0, rate: 0.04, termYears: 30 }] : [];
+            }
+            if (!Array.isArray(p.financials.assets.realEstate)) p.financials.assets.realEstate = [];
+            if (!Array.isArray(p.financials.assets.positions)) p.financials.assets.positions = [];
+        }
+        return p;
     });
 
     const [planningScope, setPlanningScope] = useState('household'); // 'household' or unit_id
     const [projection, setProjection] = useState({ data: [], explanations: [] });
     const [monteCarlo, setMonteCarlo] = useState([]);
     const [recommendations, setRecommendations] = useState([]);
+    const [privacyMode, setPrivacyMode] = useState(false);
 
     // Derived IRS groupings
     const taxUnits = identifyTaxUnits(profile.family);
@@ -76,6 +109,31 @@ export const WealthProvider = ({ children }) => {
         }));
     };
 
+    const togglePrivacyMode = () => {
+        setPrivacyMode(prev => !prev);
+    };
+
+    /**
+     * Formats currency with respect to privacy mode
+     */
+    const formatCurrency = (amount, options = {}) => {
+        if (privacyMode) {
+            return '••••••';
+        }
+
+        const defaultOptions = {
+            style: 'currency',
+            currency: 'USD',
+            maximumFractionDigits: 0,
+            minimumFractionDigits: 0,
+        };
+
+        return new Intl.NumberFormat('en-US', {
+            ...defaultOptions,
+            ...options
+        }).format(amount);
+    };
+
     const updateGoal = (goalId) => {
         setProfile(prev => ({
             ...prev,
@@ -105,9 +163,10 @@ export const WealthProvider = ({ children }) => {
                     income: 0,
                     stocks: 0,
                     retirement: 0,
-                    realEstate: 0,
-                    cash: 0,
-                    loans: 0
+                    realEstate: [],
+                    positions: [],
+                    debts: [],
+                    cash: 0
                 }
             }]
         }));
@@ -226,6 +285,10 @@ export const WealthProvider = ({ children }) => {
         return getAllClients();
     };
 
+    const updateProfile = (updates) => {
+        setProfile(prev => ({ ...prev, ...updates }));
+    };
+
     return (
         <WealthContext.Provider value={{
             profile,
@@ -235,6 +298,7 @@ export const WealthProvider = ({ children }) => {
             planningScope,
             setPlanningScope,
             taxUnits,
+            updateProfile,
             updateFinancials,
             updateGoal,
             updateFamilyMember,
@@ -251,7 +315,11 @@ export const WealthProvider = ({ children }) => {
             removeClient,
             cloneClient,
             updateClientMetadata,
-            getClientList
+            getClientList,
+            // Privacy mode
+            privacyMode,
+            togglePrivacyMode,
+            formatCurrency
         }}>
             {children}
         </WealthContext.Provider>

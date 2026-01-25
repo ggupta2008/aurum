@@ -1,7 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { aurumPersona, generateAurumResponse } from '../utils/aurumPersona';
+import { useScopedWealth } from '../hooks/useScopedWealth';
 
 const AdvisorInterface = () => {
+    const {
+        profile,
+        scopedCurrentWealth,
+        scopedTaxBuckets,
+        scopedAge,
+        scopedIncome,
+        scopedSpending,
+        planningScope,
+        targetMembers,
+        recommendations,
+        scopedProjection
+    } = useScopedWealth();
+
     const [messages, setMessages] = useState([
         {
             id: 1,
@@ -12,6 +26,19 @@ const AdvisorInterface = () => {
     const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const messagesEndRef = useRef(null);
+
+    // Create a data context string for the AI
+    const wealthData = {
+        scope: planningScope,
+        members: targetMembers.map(m => `${m.name} (${m.age})`),
+        totalNetWorth: scopedCurrentWealth,
+        taxBuckets: scopedTaxBuckets,
+        primaryAge: scopedAge,
+        annualIncome: scopedIncome,
+        annualSpending: scopedSpending,
+        activeRecommendations: recommendations.map(r => r.title),
+        projectedLegacy: scopedProjection?.data?.[scopedProjection.data.length - 1]?.optimized || 0
+    };
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -25,9 +52,7 @@ const AdvisorInterface = () => {
         e.preventDefault();
         if (!input.trim()) return;
 
-        // User Message
         const userMsg = { id: Date.now(), sender: 'user', text: input };
-        // Create a new messages array including the new user message to pass to context
         const newMessages = [...messages, userMsg];
 
         setMessages(newMessages);
@@ -35,14 +60,8 @@ const AdvisorInterface = () => {
         setIsTyping(true);
 
         try {
-            // Transform internal message format to history format expected by API if needed, 
-            // but generateAurumResponse handles mapping.
-            // We exclude the very last message (userMsg) from history in startChat usually, 
-            // or we can pass the history excluding the new message and send the new message as prompt.
-            // Let's pass the previous messages as history.
-            const history = messages.filter(m => m.id !== 1); // Exclude greeting if we want, or keep it.
-
-            const responseText = await generateAurumResponse(input, history);
+            const history = messages.filter(m => m.id !== 1);
+            const responseText = await generateAurumResponse(input, history, wealthData);
 
             const aurumMsg = {
                 id: Date.now() + 1,
@@ -63,14 +82,11 @@ const AdvisorInterface = () => {
             display: 'flex',
             flexDirection: 'column',
             height: '100%',
-            maxWidth: '1000px',
-            margin: '0 auto',
             width: '100%',
-            padding: 'var(--space-4)'
+            padding: 'var(--space-2)'
         }}>
-
             {/* Chat Area */}
-            <div className="glass-panel" style={{
+            <div style={{
                 flex: 1,
                 marginBottom: 'var(--space-4)',
                 borderRadius: 'var(--radius-lg)',
@@ -81,15 +97,15 @@ const AdvisorInterface = () => {
                 <div style={{
                     flex: 1,
                     overflowY: 'auto',
-                    padding: 'var(--space-6)',
+                    padding: 'var(--space-4)',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: 'var(--space-6)'
+                    gap: 'var(--space-4)'
                 }}>
                     {messages.map((msg) => (
                         <div key={msg.id} style={{
                             alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
-                            maxWidth: '80%',
+                            maxWidth: '90%',
                             display: 'flex',
                             gap: 'var(--space-3)'
                         }}>

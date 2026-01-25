@@ -1,13 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useScopedWealth } from '../../hooks/useScopedWealth';
-import { DollarSign, TrendingUp, ShieldCheck, Activity, Sparkles, Info, X } from 'lucide-react';
-
-const formatCurrency = (v) => new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    notation: 'compact',
-    maximumFractionDigits: 1
-}).format(v);
+import { DollarSign, TrendingUp, ShieldCheck, Activity, Sparkles, Info, X, Calculator } from 'lucide-react';
+import CalculationTransparencyModal from './CalculationTransparencyModal';
 
 const MetricCard = ({ label, value, subtext, icon: Icon, trend, delay = 0, onInfoClick }) => {
     const trendColor = trend > 0 ? 'hsl(var(--success))' : trend < 0 ? 'hsl(var(--danger))' : 'hsl(var(--text-muted))';
@@ -119,9 +113,12 @@ const SummaryCards = () => {
         scopedMonteCarlo,
         planningScope,
         taxUnits,
-        scopedCurrentWealth
+        scopedCurrentWealth,
+        formatCurrency
     } = useScopedWealth();
-    const [showMethodology, setShowMethodology] = React.useState(false);
+
+    const [showMethodology, setShowMethodology] = useState(false);
+    const [showCalculations, setShowCalculations] = useState(false);
 
     const data = scopedProjection.data || [];
     const lastPoint = data[data.length - 1] || {};
@@ -180,14 +177,14 @@ const SummaryCards = () => {
             }}>
                 <MetricCard
                     label="Current Portfolio"
-                    value={formatCurrency(startNW)}
+                    value={formatCurrency(startNW, { notation: 'compact' })}
                     subtext={planningScope === 'household' ? "Total assets across all units" : "Scoped to selected unit"}
                     icon={DollarSign}
                     delay={1}
                 />
                 <MetricCard
                     label="Estimated 25yr Wealth"
-                    value={formatCurrency(endNW)}
+                    value={formatCurrency(endNW, { notation: 'compact' })}
                     subtext="Projected legacy (optimized)"
                     icon={ShieldCheck}
                     onInfoClick={() => setShowMethodology(true)}
@@ -204,7 +201,7 @@ const SummaryCards = () => {
                 <MetricCard
                     label="Wealth Alpha"
                     value={wealthAlpha > 0
-                        ? formatCurrency(wealthAlpha)
+                        ? formatCurrency(wealthAlpha, { notation: 'compact' })
                         : "Optimization Ready"}
                     subtext={wealthAlpha > 0
                         ? "Geometric gain vs Status Quo"
@@ -214,6 +211,45 @@ const SummaryCards = () => {
                     delay={4}
                 />
             </div>
+
+            {/* Calculation Transparency Button */}
+            <div style={{ marginTop: 'var(--space-4)', textAlign: 'center' }}>
+                <button
+                    onClick={() => setShowCalculations(true)}
+                    className="glass-panel"
+                    style={{
+                        padding: 'var(--space-3) var(--space-4)',
+                        background: 'hsla(var(--gold-primary) / 0.05)',
+                        border: '1px solid hsla(var(--gold-primary) / 0.2)',
+                        borderRadius: 'var(--radius-md)',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 'var(--space-2)',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        color: 'hsl(var(--gold-primary))',
+                        transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                        e.target.style.background = 'hsla(var(--gold-primary) / 0.1)';
+                        e.target.style.borderColor = 'hsla(var(--gold-primary) / 0.3)';
+                    }}
+                    onMouseLeave={(e) => {
+                        e.target.style.background = 'hsla(var(--gold-primary) / 0.05)';
+                        e.target.style.borderColor = 'hsla(var(--gold-primary) / 0.2)';
+                    }}
+                >
+                    <Calculator size={16} />
+                    View Calculation Details
+                </button>
+            </div>
+
+            {/* Modals */}
+            <CalculationTransparencyModal
+                isOpen={showCalculations}
+                onClose={() => setShowCalculations(false)}
+            />
         </div>
     );
 };

@@ -24,6 +24,10 @@ import TrustSimulator from './TrustSimulator';
 import CharitableGivingOptimizer from './CharitableGivingOptimizer';
 import RothConversionLadder from './RothConversionLadder';
 import ClientSwitcher from './ClientSwitcher';
+import DividendSnowball from './DividendSnowball';
+import CalculationTransparency from './CalculationTransparency';
+import FinancialIndependenceCalculator from './FinancialIndependenceCalculator';
+import FinancialActionPlan from './FinancialActionPlan';
 
 const WealthDashboard = () => {
     const { taxUnits, planningScope, setPlanningScope } = useWealth();
@@ -157,6 +161,7 @@ const WealthDashboard = () => {
                     }}>
                         <AssetAllocationOptimizer />
                         <TaxWaterfall />
+                        <DividendSnowball />
                     </div>
                 </section>
 
@@ -200,13 +205,14 @@ const WealthDashboard = () => {
                         gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
                         gap: 'var(--space-6)'
                     }}>
+                        <FinancialIndependenceCalculator />
                         <SafeWithdrawalRate />
                         <SocialSecurityOptimizer />
                         <HealthcareModeler />
                     </div>
                 </section>
 
-                {/* STEP 5: PROJECTION - What Will Happen? */}
+                {/* STEP 5: ACTION PLAN - What Should You Do? */}
                 <section>
                     <div style={{ marginBottom: 'var(--space-4)' }}>
                         <h2 style={{
@@ -215,7 +221,25 @@ const WealthDashboard = () => {
                             color: 'hsl(var(--gold-primary))',
                             marginBottom: 'var(--space-1)'
                         }}>
-                            Step 5: 25-Year Wealth Trajectory
+                            Step 5: Your Action Plan
+                        </h2>
+                        <p style={{ fontSize: '0.85rem', color: 'hsl(var(--text-muted))' }}>
+                            AI-powered recommendations to achieve your goals
+                        </p>
+                    </div>
+                    <FinancialActionPlan />
+                </section>
+
+                {/* STEP 6: PROJECTION - What Will Happen? */}
+                <section>
+                    <div style={{ marginBottom: 'var(--space-4)' }}>
+                        <h2 style={{
+                            fontSize: '1.5rem',
+                            fontWeight: 700,
+                            color: 'hsl(var(--gold-primary))',
+                            marginBottom: 'var(--space-1)'
+                        }}>
+                            Step 6: 25-Year Wealth Trajectory
                         </h2>
                         <p style={{ fontSize: '0.85rem', color: 'hsl(var(--text-muted))' }}>
                             Comparing baseline vs optimized strategies over time
@@ -235,7 +259,7 @@ const WealthDashboard = () => {
                             color: 'hsl(var(--gold-primary))',
                             marginBottom: 'var(--space-1)'
                         }}>
-                            Step 6: Estate & Legacy Planning
+                            Step 7: Estate & Legacy Planning
                         </h2>
                         <p style={{ fontSize: '0.85rem', color: 'hsl(var(--text-muted))' }}>
                             Ensuring smooth wealth transfer to the next generation
@@ -276,7 +300,7 @@ const WealthDashboard = () => {
                     <IntelligenceFeed />
                 </section>
             </main>
-        </div>
+        </div >
     );
 };
 
