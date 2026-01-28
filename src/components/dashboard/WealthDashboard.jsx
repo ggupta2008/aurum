@@ -1,128 +1,106 @@
-import React from 'react';
-import { useWealth } from '../../context/WealthContext';
-import { Users, LayoutGrid, Settings, PieChart } from 'lucide-react';
-
+import React, { useState } from 'react';
+import { PlanningModeProvider, usePlanningMode } from '../../context/PlanningModeContext';
+import { useScopedWealth } from '../../hooks/useScopedWealth';
+import PlanningModeEntry from './PlanningModeEntry';
+import GoalProgressTracker from './GoalProgressTracker';
 import WealthProfile from './WealthProfile';
-import StrategySelector from './StrategySelector';
-import ProjectionChart from './ProjectionChart';
-import GoalSelector from './GoalSelector';
-import SummaryCards from './SummaryCards';
-import BucketVisualizer from './BucketVisualizer';
-import ClanBreakdown from './ClanBreakdown';
-import EstateReport from './EstateReport';
-import MilestoneRoadmap from './MilestoneRoadmap';
-import IntelligenceFeed from './IntelligenceFeed';
-import GlobalAssumptions from './GlobalAssumptions';
+import StrategyComparison from './StrategyComparison';
 import StochasticCore from './StochasticCore';
-import TaxWaterfall from './TaxWaterfall';
-import SafeWithdrawalRate from './SafeWithdrawalRate';
-import TaxBracketHeatmap from './TaxBracketHeatmap';
+import BucketVisualizer from './BucketVisualizer';
+import SummaryCards from './SummaryCards';
 import AssetAllocationOptimizer from './AssetAllocationOptimizer';
+import TaxWaterfall from './TaxWaterfall';
+import TaxBracketHeatmap from './TaxBracketHeatmap';
+import RothConversionLadder from './RothConversionLadder';
+import CharitableGivingOptimizer from './CharitableGivingOptimizer';
+import SafeWithdrawalRate from './SafeWithdrawalRate';
 import SocialSecurityOptimizer from './SocialSecurityOptimizer';
 import HealthcareModeler from './HealthcareModeler';
-import TrustSimulator from './TrustSimulator';
-import CharitableGivingOptimizer from './CharitableGivingOptimizer';
-import RothConversionLadder from './RothConversionLadder';
-import ClientSwitcher from './ClientSwitcher';
-import DividendSnowball from './DividendSnowball';
-import CalculationTransparency from './CalculationTransparency';
-import FinancialIndependenceCalculator from './FinancialIndependenceCalculator';
 import FinancialActionPlan from './FinancialActionPlan';
+import ProjectionChart from './ProjectionChart';
+import TrustSimulator from './TrustSimulator';
+import ClanBreakdown from './ClanBreakdown';
+import MilestoneRoadmap from './MilestoneRoadmap';
+import IntelligenceFeed from './IntelligenceFeed';
+import EstateReport from './EstateReport';
 
-const WealthDashboard = () => {
-    const { taxUnits, planningScope, setPlanningScope } = useWealth();
-    const [showEstateReport, setShowEstateReport] = React.useState(false);
+const WealthDashboardContent = () => {
+    const { planningScope, setPlanningScope, taxUnits } = useScopedWealth();
+    const { isPlanningMode } = usePlanningMode();
+    const [showEstateReport, setShowEstateReport] = useState(false);
 
     return (
         <div style={{
             display: 'flex',
-            height: '100%',
-            gap: 'var(--space-6)',
+            height: '100vh',
             overflow: 'hidden'
         }}>
-            {showEstateReport && <EstateReport onClose={() => setShowEstateReport(false)} />}
-
-            {/* LEFT SIDEBAR: Controls & Inputs */}
+            {/* LEFT SIDEBAR */}
             <aside style={{
-                width: '320px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 'var(--space-6)',
+                width: '260px',
                 overflowY: 'auto',
-                paddingRight: 'var(--space-2)',
-                flexShrink: 0
+                padding: 'var(--space-4)',
+                borderRight: '1px solid hsl(var(--border-muted))'
             }}>
-                <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 'var(--space-2)',
-                    color: 'hsl(var(--gold-primary))',
-                    marginBottom: 'var(--space-2)'
-                }}>
-                    <Settings size={18} />
-                    <h2 style={{ fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Configuration</h2>
-                </div>
-
-                <ClientSwitcher />
-
-                <GoalSelector />
-                <GlobalAssumptions />
+                <PlanningModeEntry />
                 <WealthProfile />
-                <StrategySelector />
-                <StochasticCore />
-                <BucketVisualizer />
             </aside>
 
-            {/* RIGHT MAIN: Professional Advisor Flow */}
+            {/* MAIN CONTENT */}
             <main style={{
                 flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 'var(--space-8)',
                 overflowY: 'auto',
+                padding: 'var(--space-6)',
                 paddingRight: 'var(--space-2)'
             }}>
-                {/* Scope Selector */}
+                {/* SCOPE SELECTOR */}
                 <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    background: 'hsla(var(--bg-surface) / 0.5)',
-                    padding: 'var(--space-3) var(--space-5)',
+                    marginBottom: 'var(--space-6)',
+                    padding: 'var(--space-4)',
+                    background: 'hsl(var(--surface-elevated))',
                     borderRadius: 'var(--radius-lg)',
-                    border: '1px solid hsla(var(--text-primary) / 0.04)',
-                    backdropFilter: 'blur(10px)',
-                    flexShrink: 0
+                    border: '1px solid hsl(var(--border-muted))'
                 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'hsl(var(--text-muted))', fontSize: '0.75rem', fontWeight: 600 }}>
-                            <Users size={14} />
-                            PLANNING FOR:
-                        </div>
-                        <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                    <div style={{
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        color: 'hsl(var(--text-muted))',
+                        marginBottom: 'var(--space-2)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em'
+                    }}>
+                        Planning Scope
+                    </div>
+                    <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+                        <button
+                            onClick={() => setPlanningScope('grand')}
+                            className={`nav-btn ${planningScope === 'grand' ? 'nav-btn-active' : ''}`}
+                            style={{ fontSize: '0.7rem', padding: '6px 14px' }}
+                        >
+                            Grand Clan
+                        </button>
+                        {taxUnits.map(unit => (
                             <button
-                                onClick={() => setPlanningScope('household')}
-                                className={`nav-btn ${planningScope === 'household' ? 'nav-btn-active' : ''}`}
+                                key={unit.id}
+                                onClick={() => setPlanningScope(unit.id)}
+                                className={`nav-btn ${planningScope === unit.id ? 'nav-btn-active' : ''}`}
                                 style={{ fontSize: '0.7rem', padding: '6px 14px' }}
                             >
-                                Grand Clan
+                                {unit.name}
                             </button>
-                            {taxUnits.map(unit => (
-                                <button
-                                    key={unit.id}
-                                    onClick={() => setPlanningScope(unit.id)}
-                                    className={`nav-btn ${planningScope === unit.id ? 'nav-btn-active' : ''}`}
-                                    style={{ fontSize: '0.7rem', padding: '6px 14px' }}
-                                >
-                                    {unit.name}
-                                </button>
-                            ))}
-                        </div>
+                        ))}
                     </div>
                 </div>
 
-                {/* STEP 1: DISCOVERY - Where Are You Now? */}
-                <section>
+                {/* PLANNING MODE SECTION - Only show when active */}
+                {isPlanningMode && (
+                    <div style={{ marginBottom: 'var(--space-8)' }}>
+                        <GoalProgressTracker />
+                    </div>
+                )}
+
+                {/* STEP 1: CURRENT POSITION */}
+                <section style={{ marginBottom: 'var(--space-8)' }}>
                     <div style={{ marginBottom: 'var(--space-4)' }}>
                         <h2 style={{
                             fontSize: '1.5rem',
@@ -139,8 +117,8 @@ const WealthDashboard = () => {
                     <SummaryCards />
                 </section>
 
-                {/* STEP 2: ANALYSIS - What Does This Mean? */}
-                <section>
+                {/* STEP 2: PORTFOLIO ANALYSIS */}
+                <section style={{ marginBottom: 'var(--space-8)' }}>
                     <div style={{ marginBottom: 'var(--space-4)' }}>
                         <h2 style={{
                             fontSize: '1.5rem',
@@ -161,12 +139,29 @@ const WealthDashboard = () => {
                     }}>
                         <AssetAllocationOptimizer />
                         <TaxWaterfall />
-                        <DividendSnowball />
                     </div>
                 </section>
 
-                {/* STEP 3: TAX STRATEGY - How Do We Optimize? */}
-                <section>
+                {/* STEP 2.5: AI STRATEGY COMPARISON */}
+                <section style={{ marginBottom: 'var(--space-8)' }}>
+                    <div style={{ marginBottom: 'var(--space-4)' }}>
+                        <h2 style={{
+                            fontSize: '1.5rem',
+                            fontWeight: 700,
+                            color: 'hsl(var(--gold-primary))',
+                            marginBottom: 'var(--space-1)'
+                        }}>
+                            Step 2.5: Strategy Comparison
+                        </h2>
+                        <p style={{ fontSize: '0.85rem', color: 'hsl(var(--text-muted))' }}>
+                            AI-generated strategy scenarios tailored to your goals
+                        </p>
+                    </div>
+                    <StrategyComparison />
+                </section>
+
+                {/* STEP 3: TAX OPTIMIZATION STRATEGY */}
+                <section style={{ marginBottom: 'var(--space-8)' }}>
                     <div style={{ marginBottom: 'var(--space-4)' }}>
                         <h2 style={{
                             fontSize: '1.5rem',
@@ -185,8 +180,8 @@ const WealthDashboard = () => {
                     <CharitableGivingOptimizer />
                 </section>
 
-                {/* STEP 4: RETIREMENT PLANNING - Can You Retire? */}
-                <section>
+                {/* STEP 4: RETIREMENT READINESS */}
+                <section style={{ marginBottom: 'var(--space-8)' }}>
                     <div style={{ marginBottom: 'var(--space-4)' }}>
                         <h2 style={{
                             fontSize: '1.5rem',
@@ -205,15 +200,14 @@ const WealthDashboard = () => {
                         gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
                         gap: 'var(--space-6)'
                     }}>
-                        <FinancialIndependenceCalculator />
                         <SafeWithdrawalRate />
                         <SocialSecurityOptimizer />
                         <HealthcareModeler />
                     </div>
                 </section>
 
-                {/* STEP 5: ACTION PLAN - What Should You Do? */}
-                <section>
+                {/* STEP 5: AI ACTION PLAN */}
+                <section style={{ marginBottom: 'var(--space-8)' }}>
                     <div style={{ marginBottom: 'var(--space-4)' }}>
                         <h2 style={{
                             fontSize: '1.5rem',
@@ -224,14 +218,14 @@ const WealthDashboard = () => {
                             Step 5: Your Action Plan
                         </h2>
                         <p style={{ fontSize: '0.85rem', color: 'hsl(var(--text-muted))' }}>
-                            AI-powered recommendations to achieve your goals
+                            AI-powered recommendations tailored to your situation
                         </p>
                     </div>
                     <FinancialActionPlan />
                 </section>
 
-                {/* STEP 6: PROJECTION - What Will Happen? */}
-                <section>
+                {/* STEP 6: 25-YEAR WEALTH TRAJECTORY */}
+                <section style={{ marginBottom: 'var(--space-8)' }}>
                     <div style={{ marginBottom: 'var(--space-4)' }}>
                         <h2 style={{
                             fontSize: '1.5rem',
@@ -250,8 +244,8 @@ const WealthDashboard = () => {
                     </div>
                 </section>
 
-                {/* STEP 6: ESTATE & LEGACY - What Happens to Your Wealth? */}
-                <section>
+                {/* STEP 7: ESTATE & LEGACY PLANNING */}
+                <section style={{ marginBottom: 'var(--space-8)' }}>
                     <div style={{ marginBottom: 'var(--space-4)' }}>
                         <h2 style={{
                             fontSize: '1.5rem',
@@ -282,7 +276,7 @@ const WealthDashboard = () => {
                     </div>
                 </section>
 
-                {/* STEP 7: ACTION ITEMS - What Should You Do Next? */}
+                {/* STEP 8: RECOMMENDED ACTIONS */}
                 <section style={{ paddingBottom: 'var(--space-10)' }}>
                     <div style={{ marginBottom: 'var(--space-4)' }}>
                         <h2 style={{
@@ -291,7 +285,7 @@ const WealthDashboard = () => {
                             color: 'hsl(var(--gold-primary))',
                             marginBottom: 'var(--space-1)'
                         }}>
-                            Step 7: Recommended Actions
+                            Step 8: Recommended Actions
                         </h2>
                         <p style={{ fontSize: '0.85rem', color: 'hsl(var(--text-muted))' }}>
                             Prioritized strategies to implement immediately
@@ -300,7 +294,20 @@ const WealthDashboard = () => {
                     <IntelligenceFeed />
                 </section>
             </main>
-        </div >
+
+            {/* MODALS */}
+            {showEstateReport && (
+                <EstateReport onClose={() => setShowEstateReport(false)} />
+            )}
+        </div>
+    );
+};
+
+const WealthDashboard = () => {
+    return (
+        <PlanningModeProvider>
+            <WealthDashboardContent />
+        </PlanningModeProvider>
     );
 };
 

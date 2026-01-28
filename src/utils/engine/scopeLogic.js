@@ -21,6 +21,7 @@ export const getTargetMembers = (profile, planningScope, taxUnits = []) => {
 
 /**
  * Calculates the current net worth for the target members.
+ * CRITICAL: Implements "Hierarchy of Truth" to prevent double-counting.
  */
 export const getScopedCurrentWealth = (profile, targetMembers) => {
     let assets = 0;
@@ -31,11 +32,28 @@ export const getScopedCurrentWealth = (profile, targetMembers) => {
 
     // 1. Clan Level Assets/Liabilities (only if primary unit included)
     if (isPrimaryIncluded) {
-        assets += (parseFloat(financials.assets?.taxable) || 0);
-        assets += (parseFloat(financials.assets?.taxDeferred) || 0);
-        assets += (parseFloat(financials.assets?.taxFree) || 0);
+        let clanAssetsAddedByHierarchy = false;
+
+        // A. Granular Positions (Priority 1)
+        const clanPOS = financials.assets?.positions || [];
+        if (Array.isArray(clanPOS) && clanPOS.length > 0) {
+            clanPOS.forEach(pos => {
+                assets += (parseFloat(pos.value) || 0);
+            });
+            clanAssetsAddedByHierarchy = true;
+        }
+
+        // B. Legacy Buckets (Priority 2 - Only if no positions)
+        if (!clanAssetsAddedByHierarchy) {
+            assets += (parseFloat(financials.assets?.taxable) || 0);
+            assets += (parseFloat(financials.assets?.taxDeferred) || 0);
+            assets += (parseFloat(financials.assets?.taxFree) || 0);
+        }
+
+        // Cash (always separate from positions/buckets)
         assets += (parseFloat(financials.assets?.cash) || 0);
 
+        // Real Estate (always added - not part of positions)
         const clanRE = financials.assets?.realEstate || [];
         if (Array.isArray(clanRE)) {
             clanRE.forEach(p => {
@@ -44,17 +62,11 @@ export const getScopedCurrentWealth = (profile, targetMembers) => {
             });
         }
 
+        // Clan Liabilities
         const clanLiab = financials.liabilities || [];
         if (Array.isArray(clanLiab)) {
             clanLiab.forEach(l => {
                 liabilities += (parseFloat(l.balance) || 0);
-            });
-        }
-
-        const clanPOS = financials.assets?.positions || [];
-        if (Array.isArray(clanPOS)) {
-            clanPOS.forEach(pos => {
-                assets += (parseFloat(pos.value) || 0);
             });
         }
     }
@@ -86,8 +98,11 @@ export const getScopedCurrentWealth = (profile, targetMembers) => {
         }
 
         assets += memberAssetsAddedByHierarchy;
-        assets += (parseFloat(f.cash) || 0); // Cash is usually separate from stock tallies
 
+        // Cash (always separate from stock tallies)
+        assets += (parseFloat(f.cash) || 0);
+
+        // Real Estate (always added - not part of positions)
         const memberRE = f.realEstate || [];
         if (Array.isArray(memberRE)) {
             memberRE.forEach(p => {
@@ -114,6 +129,7 @@ export const getScopedCurrentWealth = (profile, targetMembers) => {
 
 /**
  * Aggregates assets by tax bucket for the target members.
+ * CRITICAL: Implements "Hierarchy of Truth" to prevent double-counting.
  */
 export const getScopedTaxBuckets = (profile, targetMembers) => {
     let taxable = 0;
@@ -123,35 +139,45 @@ export const getScopedTaxBuckets = (profile, targetMembers) => {
     const financials = profile?.financials || {};
     const isPrimaryIncluded = targetMembers.some(m => m.relation === 'Self');
 
-    // 1. Clan Level Buckets
+    // 1. Clan Level Buckets (with Hierarchy of Truth)
     if (isPrimaryIncluded) {
-        taxable += (parseFloat(financials.assets?.taxable) || 0);
-        taxDeferred += (parseFloat(financials.assets?.taxDeferred) || 0);
-        taxFree += (parseFloat(financials.assets?.taxFree) || 0);
-        taxable += (parseFloat(financials.assets?.cash) || 0);
+        let clanAssetsAddedByHierarchy = false;
 
-        const clanRE = financials.assets?.realEstate || [];
-        if (Array.isArray(clanRE)) {
-            clanRE.forEach(p => taxable += (parseFloat(p.value) || 0));
-        }
-
+        // A. Granular Positions (Priority 1)
         const clanPOS = financials.assets?.positions || [];
-        if (Array.isArray(clanPOS)) {
+        if (Array.isArray(clanPOS) && clanPOS.length > 0) {
             clanPOS.forEach(pos => {
                 const val = parseFloat(pos.value) || 0;
                 if (pos.taxStatus === 'taxDeferred') taxDeferred += val;
                 else if (pos.taxStatus === 'taxFree') taxFree += val;
                 else taxable += val;
             });
+            clanAssetsAddedByHierarchy = true;
+        }
+
+        // B. Legacy Buckets (Priority 2 - Only if no positions)
+        if (!clanAssetsAddedByHierarchy) {
+            taxable += (parseFloat(financials.assets?.taxable) || 0);
+            taxDeferred += (parseFloat(financials.assets?.taxDeferred) || 0);
+            taxFree += (parseFloat(financials.assets?.taxFree) || 0);
+        }
+
+        // Cash (always separate from positions/buckets)
+        taxable += (parseFloat(financials.assets?.cash) || 0);
+
+        // Real Estate (always added - not part of positions)
+        const clanRE = financials.assets?.realEstate || [];
+        if (Array.isArray(clanRE)) {
+            clanRE.forEach(p => taxable += (parseFloat(p.value) || 0));
         }
     }
 
-    // 2. Member Level Buckets
+    // 2. Member Level Buckets (with Hierarchy of Truth)
     targetMembers.forEach(m => {
         const f = m.financials || {};
         let addedInThisStep = false;
 
-        // A. Granular Positions
+        // A. Granular Positions (Priority 1)
         if (Array.isArray(f.positions) && f.positions.length > 0) {
             f.positions.forEach(pos => {
                 const val = parseFloat(pos.value) || 0;
@@ -161,7 +187,7 @@ export const getScopedTaxBuckets = (profile, targetMembers) => {
             });
             addedInThisStep = true;
         }
-        // B. Aggregate Tallies
+        // B. Aggregate Tallies (Priority 2)
         else if ((parseFloat(f.stocks) || 0) > 0 || (parseFloat(f.retirement) || 0) > 0 || (parseFloat(f.taxFree) || 0) > 0) {
             taxable += (parseFloat(f.stocks) || 0);
             taxDeferred += (parseFloat(f.retirement) || 0);
@@ -169,17 +195,20 @@ export const getScopedTaxBuckets = (profile, targetMembers) => {
             addedInThisStep = true;
         }
 
-        // C. Legacy Buckets (Fallback)
+        // C. Legacy Buckets (Priority 3 - Fallback)
         if (!addedInThisStep && f.taxBuckets) {
             taxable += parseFloat(f.taxBuckets.taxable) || 0;
             taxDeferred += parseFloat(f.taxBuckets.taxDeferred) || 0;
             taxFree += parseFloat(f.taxBuckets.taxFree) || 0;
         }
 
-        taxable += (parseFloat(f.cash) || 0); // Cash is usually outside position/stock tallies
+        // Cash (always separate from positions/stocks/buckets)
+        taxable += (parseFloat(f.cash) || 0);
 
-        // Real Estate (always added)
-        const reVal = Array.isArray(f.realEstate) ? f.realEstate.reduce((acc, p) => acc + (parseFloat(p.value) || 0), 0) : (parseFloat(f.realEstate) || 0);
+        // Real Estate (always added - not part of positions)
+        const reVal = Array.isArray(f.realEstate)
+            ? f.realEstate.reduce((acc, p) => acc + (parseFloat(p.value) || 0), 0)
+            : (parseFloat(f.realEstate) || 0);
         taxable += reVal;
     });
 
