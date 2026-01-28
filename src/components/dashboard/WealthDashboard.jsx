@@ -5,6 +5,7 @@ import PlanningModeEntry from './PlanningModeEntry';
 import GoalProgressTracker from './GoalProgressTracker';
 import WealthProfile from './WealthProfile';
 import StrategyComparison from './StrategyComparison';
+import AIWealthAdvisor from './AIWealthAdvisor';
 import StochasticCore from './StochasticCore';
 import BucketVisualizer from './BucketVisualizer';
 import SummaryCards from './SummaryCards';
@@ -142,8 +143,8 @@ const WealthDashboardContent = () => {
                     </div>
                 </section>
 
-                {/* STEP 2.5: AI STRATEGY COMPARISON */}
-                <section style={{ marginBottom: 'var(--space-8)' }}>
+                {/* STEP 2.5: AI WEALTH ADVISOR */}
+                <section style={{ marginBottom: 'var(--space-8)', minHeight: '600px' }}>
                     <div style={{ marginBottom: 'var(--space-4)' }}>
                         <h2 style={{
                             fontSize: '1.5rem',
@@ -151,13 +152,13 @@ const WealthDashboardContent = () => {
                             color: 'hsl(var(--gold-primary))',
                             marginBottom: 'var(--space-1)'
                         }}>
-                            Step 2.5: Strategy Comparison
+                            Step 2.5: AI Wealth Advisor
                         </h2>
                         <p style={{ fontSize: '0.85rem', color: 'hsl(var(--text-muted))' }}>
-                            AI-generated strategy scenarios tailored to your goals
+                            Chat with AI to explore personalized wealth strategies
                         </p>
                     </div>
-                    <StrategyComparison />
+                    <AIWealthAdvisor />
                 </section>
 
                 {/* STEP 3: TAX OPTIMIZATION STRATEGY */}

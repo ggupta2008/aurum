@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import '../styles/index.css';
 import AdvisorInterface from './AdvisorInterface';
+import AISettings from './AISettings';
 import { Sparkles, X, LayoutDashboard, Castle, Eye, EyeOff } from 'lucide-react';
 import { useWealth } from '../context/WealthContext';
 
@@ -106,6 +107,9 @@ const Layout = ({ children, currentView, setView }) => {
 
                 {/* Copilot & Profile Actions */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                    {/* AI Settings */}
+                    <AISettings />
+
                     {/* Privacy Toggle */}
                     <button
                         onClick={togglePrivacyMode}
