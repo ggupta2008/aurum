@@ -56,6 +56,7 @@ Use these specific numbers to personalize your advice. If the user asks about ri
 ` : '';
 
     const genAI = new GoogleGenerativeAI(API_KEY);
+    // Use the latest stable 2.5 series
     const model = genAI.getGenerativeModel({
       model: "gemini-2.5-flash",
       systemInstruction: systemInstruction + contextPrompt

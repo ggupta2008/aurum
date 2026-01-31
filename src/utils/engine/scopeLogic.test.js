@@ -41,8 +41,8 @@ describe('Scope Logic Engine', () => {
 
     const mockProjection = {
         data: [
-            { year: 2024, baseline: 1130000, optimized: 1130000 }
-            // Total sum: (100+50+10+200) taxable member assets + 500 taxable household + (50+20+0+100) deferred member + 100 deferred household + 50 free household = 1130k
+            { year: 2024, baseline: 1099000, optimized: 1099000 }
+            // Spendable sum: 1130k Gross - (270k Deferred * 0.3) = 1130 - 81 = 1099k
         ]
     };
 
@@ -64,16 +64,19 @@ describe('Scope Logic Engine', () => {
             const targetMembers = [mockProfile.family[0]]; // John (Self)
             const wealth = getScopedCurrentWealth(mockProfile, targetMembers);
 
-            // John's assets (100k stocks + 50k retirement) + Household assets (500k + 100k + 50k) = 150k + 650k = 800k
-            expect(wealth).toBe(800000);
+            // John's assets (100k stocks + 50k retirement) + Household assets (500k + 100k + 50k) = 800k Gross
+            // Deferred assets = 50k + 100k = 150k. Tax Discount = 150k * 0.3 = 45k.
+            // Spendable = 755k
+            expect(wealth).toBe(755000);
         });
 
         it('should calculate correct wealth for non-primary unit (no household assets)', () => {
             const targetMembers = [mockProfile.family[3]]; // Sibling
             const wealth = getScopedCurrentWealth(mockProfile, targetMembers);
 
-            // Sibling's assets (200k stocks + 100k retirement) = 300k
-            expect(wealth).toBe(300000);
+            // Sibling's assets (200k stocks + 100k retirement) = 300k Gross
+            // Discount = 100k * 0.3 = 30k. Spendable = 270k.
+            expect(wealth).toBe(270000);
         });
     });
 
@@ -117,14 +120,14 @@ describe('Scope Logic Engine', () => {
 
     describe('getScopedSpending', () => {
         it('should sum spending for target members', () => {
-            const spending = getScopedSpending(mockProfile.family.slice(0, 2)); // John + Jane
+            const spending = getScopedSpending(mockProfile, mockProfile.family.slice(0, 2)); // John + Jane
             expect(spending).toBe(3000);
         });
     });
 
     describe('getScopedIncome', () => {
         it('should sum income for target members', () => {
-            const income = getScopedIncome(mockProfile.family.slice(0, 3)); // John + Jane + Kid
+            const income = getScopedIncome(mockProfile, mockProfile.family.slice(0, 3)); // John + Jane + Kid
             expect(income).toBe(3500);
         });
     });
@@ -174,9 +177,9 @@ describe('Scope Logic Engine', () => {
 
         it('should calculate correct ratio for sibling branch', () => {
             const ratio = calculateScopeRatio(mockProfile, mockProjection, 'unit_sibling', mockTaxUnits);
-            // Sibling wealth: 300k
-            // Total wealth: 1130k
-            expect(ratio).toBeCloseTo(300000 / 1130000);
+            // Sibling wealth (Spendable): 270k
+            // Total wealth (Spendable): 1099k
+            expect(ratio).toBeCloseTo(270000 / 1099000, 2);
         });
     });
 });

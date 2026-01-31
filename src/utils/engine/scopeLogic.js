@@ -124,7 +124,13 @@ export const getScopedCurrentWealth = (profile, targetMembers) => {
         }
     });
 
-    return assets - liabilities;
+    // 3. Apply Spendable Discount (Embedded Tax Liability)
+    // We discount tax-deferred assets by a standard blended rate (e.g. 30%)
+    // to show "Spendable" net worth (McKnight principle).
+    const { taxDeferred } = getScopedTaxBuckets(profile, targetMembers);
+    const spendableDiscount = taxDeferred * 0.30;
+
+    return assets - liabilities - spendableDiscount;
 };
 
 /**

@@ -118,11 +118,34 @@ const RealEstateManager = ({ assets, onChange }) => {
                                 onChange(newAssets);
                             }}
                         />
-                        <InputField label="Current Value" value={asset.value} onChange={(v) => {
-                            const newAssets = [...safeAssets];
-                            newAssets[idx] = { ...asset, value: parseFloat(v) || 0 };
-                            onChange(newAssets);
-                        }} />
+                        <InputField
+                            label="Current Value"
+                            value={asset.value}
+                            onChange={(v) => {
+                                const newAssets = [...safeAssets];
+                                newAssets[idx] = { ...asset, value: parseFloat(v) || 0 };
+                                onChange(newAssets);
+                            }}
+                        />
+                        <InputField
+                            label="Purchase Price"
+                            value={asset.purchasePrice || 0}
+                            onChange={(v) => {
+                                const newAssets = [...safeAssets];
+                                newAssets[idx] = { ...asset, purchasePrice: parseFloat(v) || 0 };
+                                onChange(newAssets);
+                            }}
+                        />
+                        <InputField
+                            label="Purchase Date"
+                            type="date"
+                            value={asset.purchaseDate || ''}
+                            onChange={(v) => {
+                                const newAssets = [...safeAssets];
+                                newAssets[idx] = { ...asset, purchaseDate: v };
+                                onChange(newAssets);
+                            }}
+                        />
                         {asset.type === 'rental' && (
                             <>
                                 <InputField label="Annual Gross Income" value={asset.annualIncome} onChange={(v) => {
@@ -138,6 +161,11 @@ const RealEstateManager = ({ assets, onChange }) => {
                                 <InputField label="Mgmt Fees (Annual)" value={asset.managementFee} onChange={(v) => {
                                     const newAssets = [...safeAssets];
                                     newAssets[idx] = { ...asset, managementFee: parseFloat(v) || 0 };
+                                    onChange(newAssets);
+                                }} />
+                                <InputField label="Accumulated Depreciation" value={asset.depreciation || 0} onChange={(v) => {
+                                    const newAssets = [...safeAssets];
+                                    newAssets[idx] = { ...asset, depreciation: parseFloat(v) || 0 };
                                     onChange(newAssets);
                                 }} />
                             </>
@@ -158,10 +186,44 @@ const RealEstateManager = ({ assets, onChange }) => {
                             onChange(newAssets);
                         }} />
                     </div>
+                    {/* Tax Gain/Loss Indicator */}
+                    {asset.value && asset.purchasePrice && (
+                        <div style={{
+                            marginTop: 'var(--space-3)',
+                            padding: 'var(--space-2)',
+                            background: 'hsla(var(--bg-void) / 0.4)',
+                            borderRadius: 'var(--radius-md)',
+                            fontSize: '0.75rem',
+                            display: 'flex',
+                            justifyContent: 'space-between'
+                        }}>
+                            <span style={{ opacity: 0.7 }}>Unrealized Gain/Loss:</span>
+                            <span style={{
+                                fontWeight: 700,
+                                color: asset.value > asset.purchasePrice ? 'hsl(var(--success))' : 'hsl(var(--danger))'
+                            }}>
+                                {asset.value > asset.purchasePrice ? '+' : ''}${((asset.value - asset.purchasePrice) / 1000).toFixed(0)}K
+                            </span>
+                        </div>
+                    )}
                 </div>
             ))}
             <button
-                onClick={() => onChange([...safeAssets, { id: Date.now(), name: 'New Property', type: 'primary', value: 0, mortgage: 0, rate: 0.04, termYears: 30, annualIncome: 0, propertyTax: 0, managementFee: 0 }])}
+                onClick={() => onChange([...safeAssets, {
+                    id: Date.now(),
+                    name: 'New Property',
+                    type: 'primary',
+                    value: 0,
+                    purchasePrice: 0,
+                    purchaseDate: '',
+                    mortgage: 0,
+                    rate: 0.04,
+                    termYears: 30,
+                    annualIncome: 0,
+                    propertyTax: 0,
+                    managementFee: 0,
+                    depreciation: 0
+                }])}
                 className="btn-ghost" style={{ alignSelf: 'flex-start', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '4px' }}
             >
                 <Plus size={12} /> Add Real Estate
@@ -173,41 +235,167 @@ const RealEstateManager = ({ assets, onChange }) => {
 const EquityManager = ({ positions, onChange }) => {
     const safePositions = Array.isArray(positions) ? positions : [];
 
+    // Calculate holding period in days
+    const getHoldingPeriod = (purchaseDate) => {
+        if (!purchaseDate) return null;
+        const purchase = new Date(purchaseDate);
+        const today = new Date();
+        const diffTime = Math.abs(today - purchase);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays;
+    };
+
+    // Determine if long-term or short-term capital gains
+    const getCapitalGainType = (purchaseDate) => {
+        const days = getHoldingPeriod(purchaseDate);
+        if (!days) return null;
+        return days > 365 ? 'LTCG' : 'STCG';
+    };
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-            {safePositions.map((pos, idx) => (
-                <div key={pos.id || idx} className="glass-panel" style={{ padding: 'var(--space-3)', background: 'hsla(var(--bg-void) / 0.2)', display: 'grid', gridTemplateColumns: 'minmax(80px, 1fr) minmax(100px, 1.25fr) minmax(80px, 1fr) 30px', gap: 'var(--space-3)', alignItems: 'center' }}>
-                    <div style={{ position: 'relative' }}>
-                        <div style={{ fontSize: '0.6rem', color: 'hsl(var(--text-muted))', marginBottom: '2px', textTransform: 'uppercase' }}>Ticker</div>
-                        <input
-                            value={pos.ticker}
-                            onChange={(e) => {
+            {safePositions.map((pos, idx) => {
+                const gainLoss = (pos.value || 0) - (pos.costBasis || 0);
+                const gainLossPercent = pos.costBasis ? ((gainLoss / pos.costBasis) * 100) : 0;
+                const capGainType = getCapitalGainType(pos.purchaseDate);
+                const holdingDays = getHoldingPeriod(pos.purchaseDate);
+
+                return (
+                    <div key={pos.id || idx} className="glass-panel" style={{
+                        padding: 'var(--space-3)',
+                        background: 'hsla(var(--bg-void) / 0.2)',
+                        border: '1px solid hsla(var(--text-primary) / 0.05)'
+                    }}>
+                        {/* Header Row */}
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'minmax(80px, 1fr) minmax(100px, 1.25fr) minmax(100px, 1.25fr) minmax(80px, 1fr) 30px',
+                            gap: 'var(--space-3)',
+                            alignItems: 'center',
+                            marginBottom: 'var(--space-3)'
+                        }}>
+                            <div style={{ position: 'relative' }}>
+                                <div style={{ fontSize: '0.6rem', color: 'hsl(var(--text-muted))', marginBottom: '2px', textTransform: 'uppercase' }}>Ticker</div>
+                                <input
+                                    value={pos.ticker}
+                                    onChange={(e) => {
+                                        const newP = [...safePositions];
+                                        newP[idx] = { ...pos, ticker: e.target.value.toUpperCase() };
+                                        onChange(newP);
+                                    }}
+                                    placeholder="SPY"
+                                    style={{ background: 'transparent', border: 'none', color: 'hsl(var(--gold-primary))', fontWeight: 700, fontSize: '0.85rem', outline: 'none', width: '100%' }}
+                                />
+                            </div>
+                            <InputField label="Current Value" value={pos.value} onChange={(v) => {
                                 const newP = [...safePositions];
-                                newP[idx] = { ...pos, ticker: e.target.value.toUpperCase() };
+                                newP[idx] = { ...pos, value: parseFloat(v) || 0 };
                                 onChange(newP);
-                            }}
-                            placeholder="SPY"
-                            style={{ background: 'transparent', border: 'none', color: 'hsl(var(--gold-primary))', fontWeight: 700, fontSize: '0.85rem', outline: 'none', width: '100%' }}
-                        />
+                            }} />
+                            <InputField label="Cost Basis" value={pos.costBasis || 0} onChange={(v) => {
+                                const newP = [...safePositions];
+                                newP[idx] = { ...pos, costBasis: parseFloat(v) || 0 };
+                                onChange(newP);
+                            }} />
+                            <InputField label="Yield %" value={(pos.dividendYield || 0) * 100} onChange={(v) => {
+                                const newP = [...safePositions];
+                                newP[idx] = { ...pos, dividendYield: (parseFloat(v) || 0) / 100 };
+                                onChange(newP);
+                            }} />
+                            <button onClick={() => {
+                                const newP = safePositions.filter((_, i) => i !== idx);
+                                onChange(newP);
+                            }} style={{ background: 'transparent', border: 'none', color: 'hsl(var(--danger))', cursor: 'pointer', alignSelf: 'center', marginTop: '12px' }}><Trash2 size={14} /></button>
+                        </div>
+
+                        {/* Second Row - Purchase Details */}
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+                            gap: 'var(--space-3)',
+                            marginBottom: 'var(--space-2)'
+                        }}>
+                            <InputField
+                                label="Purchase Date"
+                                type="date"
+                                value={pos.purchaseDate || ''}
+                                onChange={(v) => {
+                                    const newP = [...safePositions];
+                                    newP[idx] = { ...pos, purchaseDate: v };
+                                    onChange(newP);
+                                }}
+                            />
+                            <SelectField
+                                label="Tax Status"
+                                value={pos.taxStatus || 'taxable'}
+                                options={[
+                                    { label: 'Taxable', value: 'taxable' },
+                                    { label: 'Tax-Deferred (IRA/401k)', value: 'tax-deferred' },
+                                    { label: 'Tax-Free (Roth)', value: 'tax-free' }
+                                ]}
+                                onChange={(v) => {
+                                    const newP = [...safePositions];
+                                    newP[idx] = { ...pos, taxStatus: v };
+                                    onChange(newP);
+                                }}
+                            />
+                        </div>
+
+                        {/* Tax Analysis Row */}
+                        {pos.costBasis > 0 && pos.value > 0 && (
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
+                                gap: 'var(--space-2)',
+                                padding: 'var(--space-2)',
+                                background: 'hsla(var(--bg-void) / 0.4)',
+                                borderRadius: 'var(--radius-md)',
+                                fontSize: '0.7rem'
+                            }}>
+                                <div>
+                                    <div style={{ opacity: 0.6, marginBottom: '2px' }}>Unrealized G/L</div>
+                                    <div style={{
+                                        fontWeight: 700,
+                                        color: gainLoss >= 0 ? 'hsl(var(--success))' : 'hsl(var(--danger))'
+                                    }}>
+                                        {gainLoss >= 0 ? '+' : ''}${(gainLoss / 1000).toFixed(1)}K ({gainLossPercent >= 0 ? '+' : ''}{gainLossPercent.toFixed(1)}%)
+                                    </div>
+                                </div>
+                                {capGainType && (
+                                    <div>
+                                        <div style={{ opacity: 0.6, marginBottom: '2px' }}>Cap Gains Type</div>
+                                        <div style={{
+                                            fontWeight: 700,
+                                            color: capGainType === 'LTCG' ? 'hsl(var(--success))' : 'hsl(var(--warning))'
+                                        }}>
+                                            {capGainType} ({holdingDays}d)
+                                        </div>
+                                    </div>
+                                )}
+                                {pos.taxStatus === 'taxable' && gainLoss > 0 && (
+                                    <div>
+                                        <div style={{ opacity: 0.6, marginBottom: '2px' }}>Est. Tax (if sold)</div>
+                                        <div style={{ fontWeight: 700, color: 'hsl(var(--warning))' }}>
+                                            ${((gainLoss * (capGainType === 'LTCG' ? 0.15 : 0.35)) / 1000).toFixed(1)}K
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
-                    <InputField label="Value" value={pos.value} onChange={(v) => {
-                        const newP = [...safePositions];
-                        newP[idx] = { ...pos, value: parseFloat(v) || 0 };
-                        onChange(newP);
-                    }} />
-                    <InputField label="Yield %" value={(pos.dividendYield || 0) * 100} onChange={(v) => {
-                        const newP = [...safePositions];
-                        newP[idx] = { ...pos, dividendYield: (parseFloat(v) || 0) / 100 };
-                        onChange(newP);
-                    }} />
-                    <button onClick={() => {
-                        const newP = safePositions.filter((_, i) => i !== idx);
-                        onChange(newP);
-                    }} style={{ background: 'transparent', border: 'none', color: 'hsl(var(--danger))', cursor: 'pointer', alignSelf: 'center', marginTop: '12px' }}><Trash2 size={14} /></button>
-                </div>
-            ))}
+                );
+            })}
             <button onClick={() => {
-                onChange([...safePositions, { id: Date.now(), ticker: '', description: '', value: 0, costBasis: 0, taxStatus: 'taxable', dividendYield: 0.015 }]);
+                onChange([...safePositions, {
+                    id: Date.now(),
+                    ticker: '',
+                    description: '',
+                    value: 0,
+                    costBasis: 0,
+                    purchaseDate: '',
+                    taxStatus: 'taxable',
+                    dividendYield: 0.015
+                }]);
             }} className="btn-ghost" style={{ alignSelf: 'flex-start', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <Plus size={12} /> Add Equity
             </button>

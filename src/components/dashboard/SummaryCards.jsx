@@ -4,31 +4,22 @@ import { DollarSign, TrendingUp, ShieldCheck, Activity, Sparkles, Info, X, Calcu
 import CalculationTransparencyModal from './CalculationTransparencyModal';
 
 const MetricCard = ({ label, value, subtext, icon: Icon, trend, delay = 0, onInfoClick }) => {
-    const trendColor = trend > 0 ? 'hsl(var(--success))' : trend < 0 ? 'hsl(var(--danger))' : 'hsl(var(--text-muted))';
+    const isPositive = trend > 0;
+    const isNeutral = !trend;
 
     return (
         <div
-            className={`glass-panel anim-fade-up anim-delay-${delay}`}
+            className={`glass-panel glass-panel-interactive anim-fade-up anim-delay-${delay}`}
             style={{
-                padding: 'var(--space-4)',
+                padding: 'var(--space-5)',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 'var(--space-2)',
+                justifyContent: 'space-between', // stretch to fill
+                gap: 'var(--space-3)',
                 position: 'relative',
-                overflow: 'hidden'
+                minHeight: '160px' // Taller, more premium presence
             }}
         >
-            {/* Glow effect */}
-            <div style={{
-                position: 'absolute',
-                top: '-50%',
-                right: '-50%',
-                width: '100%',
-                height: '100%',
-                background: 'radial-gradient(circle, hsla(var(--gold-primary) / 0.1) 0%, transparent 70%)',
-                pointerEvents: 'none'
-            }} />
-
             <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -37,15 +28,17 @@ const MetricCard = ({ label, value, subtext, icon: Icon, trend, delay = 0, onInf
                 zIndex: 1
             }}>
                 <div style={{
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: 'var(--radius-md)',
-                    background: 'hsla(var(--gold-primary) / 0.1)',
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, hsla(var(--gold-primary)/0.2), hsla(var(--bg-void)/0.5))',
+                    border: '1px solid hsla(var(--gold-primary)/0.3)',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    boxShadow: '0 4px 12px hsla(0,0,0,0.1)' // faint shadow for depth
                 }}>
-                    <Icon size={18} className="text-gold" />
+                    <Icon size={20} className="text-gold" />
                 </div>
                 {onInfoClick && (
                     <button
@@ -55,52 +48,87 @@ const MetricCard = ({ label, value, subtext, icon: Icon, trend, delay = 0, onInf
                             border: 'none',
                             color: 'hsl(var(--text-dim))',
                             cursor: 'pointer',
-                            padding: '4px'
+                            padding: '4px',
+                            transition: 'color 0.2s'
                         }}
+                        onMouseEnter={e => e.target.style.color = 'hsl(var(--gold-primary))'}
+                        onMouseLeave={e => e.target.style.color = 'hsl(var(--text-dim))'}
                     >
-                        <Info size={14} />
+                        <Info size={16} />
                     </button>
                 )}
             </div>
 
             <div style={{ position: 'relative', zIndex: 1 }}>
                 <div style={{
-                    fontSize: '0.7rem',
-                    color: 'hsl(var(--text-muted))',
-                    marginBottom: '4px',
+                    fontSize: '0.75rem',
+                    color: 'hsl(var(--text-secondary))',
+                    marginBottom: '6px',
                     textTransform: 'uppercase',
-                    letterSpacing: '0.05em'
+                    letterSpacing: '0.08em',
+                    fontWeight: 600
                 }}>
                     {label}
                 </div>
                 <div style={{
-                    fontSize: '1.5rem',
-                    fontWeight: 800,
-                    color: 'white',
-                    marginBottom: '2px',
-                    letterSpacing: '-0.02em'
+                    fontSize: '1.8rem',
+                    fontWeight: 700,
+                    fontFamily: 'Space Grotesk, sans-serif', // Digital readout font
+                    color: 'hsl(var(--text-primary))',
+                    marginBottom: '8px',
+                    letterSpacing: '-0.03em',
+                    display: 'flex',
+                    alignItems: 'baseline',
+                    gap: '6px',
+                    background: 'linear-gradient(180deg, hsl(var(--text-primary)) 0%, hsl(var(--text-secondary)) 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent'
                 }}>
                     {value}
+                    {label === "Net Worth" && <span style={{
+                        fontSize: '0.6rem',
+                        color: 'hsl(var(--gold-primary))',
+                        WebkitTextFillColor: 'initial', // Reset gradient
+                        opacity: 1,
+                        fontWeight: 700,
+                        border: '1px solid hsla(var(--gold-primary)/0.3)',
+                        padding: '2px 6px',
+                        borderRadius: '4px'
+                    }}>LIQUID</span>}
                 </div>
+
                 <div style={{
-                    fontSize: '0.65rem',
-                    color: 'hsl(var(--text-dim))',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px'
+                    gap: '12px'
                 }}>
-                    {subtext}
-                    {trend !== undefined && trend !== 0 && (
-                        <span style={{
-                            color: trendColor,
-                            fontWeight: 600,
+                    {/* Trend Badge */}
+                    {!isNeutral && (
+                        <div style={{
+                            padding: '4px 8px',
+                            borderRadius: '20px',
+                            background: isPositive ? 'hsla(var(--success)/0.1)' : 'hsla(var(--danger)/0.1)',
+                            border: `1px solid ${isPositive ? 'hsla(var(--success)/0.2)' : 'hsla(var(--danger)/0.2)'}`,
+                            color: isPositive ? 'hsl(var(--success))' : 'hsl(var(--danger))',
+                            fontSize: '0.7rem',
+                            fontWeight: 700,
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '2px'
+                            gap: '3px'
                         }}>
-                            {trend > 0 ? '↑' : '↓'} {Math.abs(trend)}%
-                        </span>
+                            {isPositive ? '↗' : '↘'} {Math.abs(trend)}%
+                        </div>
                     )}
+
+                    <div style={{
+                        fontSize: '0.7rem',
+                        color: 'hsl(var(--text-muted))',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
+                    }}>
+                        {subtext}
+                    </div>
                 </div>
             </div>
         </div>
@@ -143,7 +171,7 @@ const SummaryCards = () => {
                         left: 0,
                         right: 0,
                         zIndex: 100,
-                        background: 'hsl(var(--bg-void))',
+                        background: 'hsl(var(--bg-elevated))',
                         padding: 'var(--space-6)',
                         border: '1px solid hsla(var(--gold-primary) / 0.2)',
                         boxShadow: '0 20px 50px rgba(0,0,0,0.8)'
@@ -157,8 +185,7 @@ const SummaryCards = () => {
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-8)', fontSize: '0.8rem', color: 'hsl(var(--text-secondary))', lineHeight: 1.6 }}>
                         <div>
-                            <p style={{ marginBottom: '12px' }}><strong>Safety Score (Monte Carlo):</strong> We run 250 parallel universes of your life. The score is the % of universes where you never run out of money.</p>
-                            <p style={{ marginBottom: '12px' }}><strong>Wealth Alpha:</strong> The "Strategy Value" or projected dollar gain of the Aurum Optimized plan over your baseline Status Quo. This quantifies the mathematical advantage of fee reduction, tax bucket shifting, and asset location.</p>
+                            <p style={{ marginBottom: '12px' }}><strong>Stress Test (Monte Carlo):</strong> We run 250 parallel universes of your life. The score is the % of universes where you never run out of money.</p>
                             <p><strong>Wealth Projection:</strong> A deterministic 25-year compounding simulation comparing selected strategies vs. a default 'lazy' portfolio.</p>
                         </div>
                         <div>
@@ -172,7 +199,7 @@ const SummaryCards = () => {
 
             <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(4, 1fr)',
+                gridTemplateColumns: 'repeat(2, 1fr)',
                 gap: 'var(--space-4)'
             }}>
                 <MetricCard
@@ -185,30 +212,10 @@ const SummaryCards = () => {
                 <MetricCard
                     label="Estimated 25yr Wealth"
                     value={formatCurrency(endNW, { notation: 'compact' })}
-                    subtext="Projected legacy (optimized)"
+                    subtext="Projected worth (current scenario)"
                     icon={ShieldCheck}
                     onInfoClick={() => setShowMethodology(true)}
                     delay={2}
-                />
-                <MetricCard
-                    label="Safety Score"
-                    value={`${successRatio}%`}
-                    subtext="Plan success probability"
-                    icon={Sparkles}
-                    trend={successRatio > 90 ? 12 : -5}
-                    delay={3}
-                />
-                <MetricCard
-                    label="Wealth Alpha"
-                    value={wealthAlpha > 0
-                        ? formatCurrency(wealthAlpha, { notation: 'compact' })
-                        : "Optimization Ready"}
-                    subtext={wealthAlpha > 0
-                        ? "Geometric gain vs Status Quo"
-                        : "Enable strategies to generate Alpha"}
-                    icon={TrendingUp}
-                    onInfoClick={() => setShowMethodology(true)}
-                    delay={4}
                 />
             </div>
 

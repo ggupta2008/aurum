@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
-import { PlanningModeProvider, usePlanningMode } from '../../context/PlanningModeContext';
+import { Sparkles } from 'lucide-react';
 import { useScopedWealth } from '../../hooks/useScopedWealth';
-import PlanningModeEntry from './PlanningModeEntry';
-import GoalProgressTracker from './GoalProgressTracker';
-import WealthProfile from './WealthProfile';
 import StrategyComparison from './StrategyComparison';
 import AIWealthAdvisor from './AIWealthAdvisor';
 import StochasticCore from './StochasticCore';
@@ -27,273 +24,228 @@ import EstateReport from './EstateReport';
 
 const WealthDashboardContent = () => {
     const { planningScope, setPlanningScope, taxUnits } = useScopedWealth();
-    const { isPlanningMode } = usePlanningMode();
     const [showEstateReport, setShowEstateReport] = useState(false);
 
     return (
         <div style={{
             display: 'flex',
             height: '100vh',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            background: 'transparent' // Let global gradient shine
         }}>
-            {/* LEFT SIDEBAR */}
-            <aside style={{
-                width: '260px',
-                overflowY: 'auto',
-                padding: 'var(--space-4)',
-                borderRight: '1px solid hsl(var(--border-muted))'
-            }}>
-                <PlanningModeEntry />
-                <WealthProfile />
-            </aside>
-
             {/* MAIN CONTENT */}
             <main style={{
                 flex: 1,
                 overflowY: 'auto',
                 padding: 'var(--space-6)',
-                paddingRight: 'var(--space-2)'
+                paddingRight: 'var(--space-4)'
             }}>
-                {/* SCOPE SELECTOR */}
+                {/* TRUST SIGNAL HEADER */}
                 <div style={{
-                    marginBottom: 'var(--space-6)',
-                    padding: 'var(--space-4)',
-                    background: 'hsl(var(--surface-elevated))',
-                    borderRadius: 'var(--radius-lg)',
-                    border: '1px solid hsl(var(--border-muted))'
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: 'var(--space-8)',
+                    paddingBottom: 'var(--space-4)',
+                    borderBottom: '1px solid hsla(var(--text-primary) / 0.05)'
                 }}>
                     <div style={{
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        color: 'hsl(var(--text-muted))',
-                        marginBottom: 'var(--space-2)',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em'
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        padding: '8px 16px',
+                        background: 'hsla(var(--success)/0.1)',
+                        borderRadius: '20px',
+                        border: '1px solid hsla(var(--success)/0.2)'
                     }}>
-                        Planning Scope
+                        <div style={{
+                            width: '8px',
+                            height: '8px',
+                            borderRadius: '50%',
+                            background: 'hsl(var(--success))',
+                            boxShadow: '0 0 12px hsl(var(--success))'
+                        }} className="anim-pulse" />
+                        <span style={{
+                            fontSize: '0.7rem',
+                            color: 'hsl(var(--success))',
+                            fontWeight: 700,
+                            letterSpacing: '0.08em'
+                        }}>
+                            SECURE CONNECTION • FIDUCIARY PROTOCOL ACTIVE
+                        </span>
                     </div>
-                    <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+
+                    {/* SCOPE SELECTOR */}
+                    <div className="glass-panel" style={{
+                        display: 'flex',
+                        gap: '4px',
+                        padding: '4px',
+                        borderRadius: '12px'
+                    }}>
+                        {/* Grand Clan Toggle */}
                         <button
                             onClick={() => setPlanningScope('grand')}
-                            className={`nav-btn ${planningScope === 'grand' ? 'nav-btn-active' : ''}`}
-                            style={{ fontSize: '0.7rem', padding: '6px 14px' }}
+                            style={{
+                                padding: '6px 12px',
+                                fontSize: '0.75rem',
+                                fontWeight: 600,
+                                borderRadius: '8px',
+                                border: 'none',
+                                cursor: 'pointer',
+                                background: planningScope === 'grand' ? 'hsl(var(--gold-primary))' : 'transparent',
+                                color: planningScope === 'grand' ? 'hsl(var(--text-on-gold))' : 'hsl(var(--text-secondary))',
+                                transition: 'all 0.2s',
+                                fontFamily: 'Space Grotesk, sans-serif'
+                            }}
                         >
-                            Grand Clan
+                            GRAND CLAN
                         </button>
+
+                        {/* Divider */}
+                        <div style={{ width: '1px', background: 'hsla(var(--text-primary)/0.1)', margin: '4px 0' }} />
+
+                        {/* Tax Units */}
                         {taxUnits.map(unit => (
                             <button
                                 key={unit.id}
                                 onClick={() => setPlanningScope(unit.id)}
-                                className={`nav-btn ${planningScope === unit.id ? 'nav-btn-active' : ''}`}
-                                style={{ fontSize: '0.7rem', padding: '6px 14px' }}
+                                style={{
+                                    padding: '6px 12px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 600,
+                                    borderRadius: '8px',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    background: planningScope === unit.id ? 'hsla(var(--text-primary)/0.1)' : 'transparent',
+                                    color: planningScope === unit.id ? 'hsl(var(--text-primary))' : 'hsl(var(--text-secondary))',
+                                    transition: 'all 0.2s',
+                                    fontFamily: 'Space Grotesk, sans-serif'
+                                }}
                             >
-                                {unit.name}
+                                {unit.name.toUpperCase()}
                             </button>
                         ))}
                     </div>
                 </div>
 
-                {/* PLANNING MODE SECTION - Only show when active */}
-                {isPlanningMode && (
+                {/* SECTION 1: WEALTH COMMAND CENTER */}
+                <section style={{ marginBottom: 'var(--space-8)' }}>
+                    <div style={{ marginBottom: 'var(--space-4)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                        <div>
+                            <h2 className="anim-fade-up" style={{
+                                fontSize: '2rem',
+                                fontWeight: 600,
+                                letterSpacing: '-0.02em',
+                                color: 'hsl(var(--text-primary))',
+                                margin: 0,
+                                fontFamily: 'Space Grotesk, sans-serif'
+                            }}>
+                                Wealth Command Center
+                            </h2>
+                            <p className="anim-fade-up anim-delay-1" style={{
+                                fontSize: '0.9rem',
+                                color: 'hsl(var(--text-secondary))',
+                                marginTop: '4px'
+                            }}>
+                                Live telemetry of gross assets across {planningScope === 'household' ? 'all entities' : 'selected tax unit'}
+                            </p>
+                        </div>
+                    </div>
+
                     <div style={{ marginBottom: 'var(--space-8)' }}>
-                        <GoalProgressTracker />
-                    </div>
-                )}
-
-                {/* STEP 1: CURRENT POSITION */}
-                <section style={{ marginBottom: 'var(--space-8)' }}>
-                    <div style={{ marginBottom: 'var(--space-4)' }}>
-                        <h2 style={{
-                            fontSize: '1.5rem',
-                            fontWeight: 700,
-                            color: 'hsl(var(--gold-primary))',
-                            marginBottom: 'var(--space-1)'
-                        }}>
-                            Step 1: Current Position
-                        </h2>
-                        <p style={{ fontSize: '0.85rem', color: 'hsl(var(--text-muted))' }}>
-                            Understanding your current financial situation
-                        </p>
-                    </div>
-                    <SummaryCards />
-                </section>
-
-                {/* STEP 2: PORTFOLIO ANALYSIS */}
-                <section style={{ marginBottom: 'var(--space-8)' }}>
-                    <div style={{ marginBottom: 'var(--space-4)' }}>
-                        <h2 style={{
-                            fontSize: '1.5rem',
-                            fontWeight: 700,
-                            color: 'hsl(var(--gold-primary))',
-                            marginBottom: 'var(--space-1)'
-                        }}>
-                            Step 2: Portfolio Analysis
-                        </h2>
-                        <p style={{ fontSize: '0.85rem', color: 'hsl(var(--text-muted))' }}>
-                            Deep dive into your asset allocation and tax efficiency
-                        </p>
-                    </div>
-                    <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                        gap: 'var(--space-6)'
-                    }}>
-                        <AssetAllocationOptimizer />
-                        <TaxWaterfall />
+                        <SummaryCards />
                     </div>
                 </section>
 
-                {/* STEP 2.5: AI WEALTH ADVISOR */}
-                <section style={{ marginBottom: 'var(--space-8)', minHeight: '600px' }}>
-                    <div style={{ marginBottom: 'var(--space-4)' }}>
-                        <h2 style={{
-                            fontSize: '1.5rem',
-                            fontWeight: 700,
-                            color: 'hsl(var(--gold-primary))',
-                            marginBottom: 'var(--space-1)'
-                        }}>
-                            Step 2.5: AI Wealth Advisor
-                        </h2>
-                        <p style={{ fontSize: '0.85rem', color: 'hsl(var(--text-muted))' }}>
-                            Chat with AI to explore personalized wealth strategies
-                        </p>
-                    </div>
-                    <AIWealthAdvisor />
-                </section>
+                {/* SECTION 2: INTELLIGENCE & PROJECTIONS GRID */}
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1.2fr 1fr', // 60/40 spread
+                    gap: 'var(--space-6)',
+                    marginBottom: 'var(--space-8)'
+                }}>
+                    {/* Left Col: AI Advisor + Strategy */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+                        {/* AI Advisor */}
+                        <section className="anim-fade-up anim-delay-2">
+                            <AIWealthAdvisor />
+                        </section>
 
-                {/* STEP 3: TAX OPTIMIZATION STRATEGY */}
-                <section style={{ marginBottom: 'var(--space-8)' }}>
-                    <div style={{ marginBottom: 'var(--space-4)' }}>
-                        <h2 style={{
-                            fontSize: '1.5rem',
-                            fontWeight: 700,
-                            color: 'hsl(var(--gold-primary))',
-                            marginBottom: 'var(--space-1)'
-                        }}>
-                            Step 3: Tax Optimization Strategy
-                        </h2>
-                        <p style={{ fontSize: '0.85rem', color: 'hsl(var(--text-muted))' }}>
-                            Identifying opportunities to minimize lifetime tax burden
-                        </p>
+                        {/* Strategy Comparison */}
+                        <StrategyComparison />
                     </div>
-                    <TaxBracketHeatmap />
-                    <RothConversionLadder />
-                    <CharitableGivingOptimizer />
-                </section>
 
-                {/* STEP 4: RETIREMENT READINESS */}
-                <section style={{ marginBottom: 'var(--space-8)' }}>
-                    <div style={{ marginBottom: 'var(--space-4)' }}>
-                        <h2 style={{
-                            fontSize: '1.5rem',
-                            fontWeight: 700,
-                            color: 'hsl(var(--gold-primary))',
-                            marginBottom: 'var(--space-1)'
-                        }}>
-                            Step 4: Retirement Readiness
-                        </h2>
-                        <p style={{ fontSize: '0.85rem', color: 'hsl(var(--text-muted))' }}>
-                            Determining your safe withdrawal rate and sustainability
-                        </p>
+                    {/* Right Col: Charts & Visuals */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+                        <div className="anim-fade-up anim-delay-3" style={{ height: '500px' }}>
+                            {/* Projection Chart - Now self-contained glass panel */}
+                            <ProjectionChart />
+                        </div>
+                        <div className="anim-fade-up anim-delay-3">
+                            <TaxWaterfall />
+                        </div>
                     </div>
-                    <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
-                        gap: 'var(--space-6)'
-                    }}>
-                        <SafeWithdrawalRate />
-                        <SocialSecurityOptimizer />
-                        <HealthcareModeler />
-                    </div>
-                </section>
+                </div>
 
-                {/* STEP 5: AI ACTION PLAN */}
-                <section style={{ marginBottom: 'var(--space-8)' }}>
-                    <div style={{ marginBottom: 'var(--space-4)' }}>
-                        <h2 style={{
-                            fontSize: '1.5rem',
-                            fontWeight: 700,
-                            color: 'hsl(var(--gold-primary))',
-                            marginBottom: 'var(--space-1)'
-                        }}>
-                            Step 5: Your Action Plan
-                        </h2>
-                        <p style={{ fontSize: '0.85rem', color: 'hsl(var(--text-muted))' }}>
-                            AI-powered recommendations tailored to your situation
-                        </p>
-                    </div>
-                    <FinancialActionPlan />
-                </section>
+                {/* SECTION 3: DEEP DIVES GRID */}
+                <h3 className="anim-fade-up" style={{
+                    fontSize: '1.5rem',
+                    fontWeight: 600,
+                    fontFamily: 'Space Grotesk, sans-serif',
+                    color: 'hsl(var(--text-primary))',
+                    marginBottom: 'var(--space-6)',
+                    borderTop: '1px solid hsla(var(--text-primary)/0.1)',
+                    paddingTop: 'var(--space-6)'
+                }}>
+                    Strategic Deep Dives
+                </h3>
 
-                {/* STEP 6: 25-YEAR WEALTH TRAJECTORY */}
-                <section style={{ marginBottom: 'var(--space-8)' }}>
-                    <div style={{ marginBottom: 'var(--space-4)' }}>
-                        <h2 style={{
-                            fontSize: '1.5rem',
-                            fontWeight: 700,
-                            color: 'hsl(var(--gold-primary))',
-                            marginBottom: 'var(--space-1)'
-                        }}>
-                            Step 6: 25-Year Wealth Trajectory
-                        </h2>
-                        <p style={{ fontSize: '0.85rem', color: 'hsl(var(--text-muted))' }}>
-                            Comparing baseline vs optimized strategies over time
-                        </p>
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
+                    gap: 'var(--space-6)',
+                    paddingBottom: 'var(--space-12)'
+                }}>
+                    {/* Tax Strategy */}
+                    <div className="glass-panel" style={{ padding: 'var(--space-6)' }}>
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'hsl(var(--gold-primary))', marginBottom: '1rem', fontFamily: 'Space Grotesk' }}>Tax Engineering</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                            <TaxBracketHeatmap />
+                            <RothConversionLadder />
+                            <CharitableGivingOptimizer />
+                        </div>
                     </div>
-                    <div style={{ height: '500px' }}>
-                        <ProjectionChart />
-                    </div>
-                </section>
 
-                {/* STEP 7: ESTATE & LEGACY PLANNING */}
-                <section style={{ marginBottom: 'var(--space-8)' }}>
-                    <div style={{ marginBottom: 'var(--space-4)' }}>
-                        <h2 style={{
-                            fontSize: '1.5rem',
-                            fontWeight: 700,
-                            color: 'hsl(var(--gold-primary))',
-                            marginBottom: 'var(--space-1)'
-                        }}>
-                            Step 7: Estate & Legacy Planning
-                        </h2>
-                        <p style={{ fontSize: '0.85rem', color: 'hsl(var(--text-muted))' }}>
-                            Ensuring smooth wealth transfer to the next generation
-                        </p>
+                    {/* Retirement & Longevity */}
+                    <div className="glass-panel" style={{ padding: 'var(--space-6)' }}>
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'hsl(var(--gold-primary))', marginBottom: '1rem', fontFamily: 'Space Grotesk' }}>Longevity & Cash Flow</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                            <SafeWithdrawalRate />
+                            <SocialSecurityOptimizer />
+                            <HealthcareModeler />
+                        </div>
                     </div>
-                    <div style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 'var(--space-6)'
-                    }}>
-                        <TrustSimulator />
-                        <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
-                            gap: 'var(--space-6)'
-                        }}>
+
+                    {/* Estate & Legacy */}
+                    <div className="glass-panel" style={{ padding: 'var(--space-6)' }}>
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'hsl(var(--gold-primary))', marginBottom: '1rem', fontFamily: 'Space Grotesk' }}>Estate Architecture</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                            <TrustSimulator />
                             <ClanBreakdown onShowReport={() => setShowEstateReport(true)} />
                             <MilestoneRoadmap />
                         </div>
                     </div>
-                </section>
 
-                {/* STEP 8: RECOMMENDED ACTIONS */}
-                <section style={{ paddingBottom: 'var(--space-10)' }}>
-                    <div style={{ marginBottom: 'var(--space-4)' }}>
-                        <h2 style={{
-                            fontSize: '1.5rem',
-                            fontWeight: 700,
-                            color: 'hsl(var(--gold-primary))',
-                            marginBottom: 'var(--space-1)'
-                        }}>
-                            Step 8: Recommended Actions
-                        </h2>
-                        <p style={{ fontSize: '0.85rem', color: 'hsl(var(--text-muted))' }}>
-                            Prioritized strategies to implement immediately
-                        </p>
+                    {/* Portfolio Optimization */}
+                    <div className="glass-panel" style={{ padding: 'var(--space-6)' }}>
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'hsl(var(--gold-primary))', marginBottom: '1rem', fontFamily: 'Space Grotesk' }}>Risk & Allocation</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                            <AssetAllocationOptimizer />
+                            <IntelligenceFeed />
+                            <FinancialActionPlan />
+                        </div>
                     </div>
-                    <IntelligenceFeed />
-                </section>
+                </div>
             </main>
 
             {/* MODALS */}
@@ -306,9 +258,7 @@ const WealthDashboardContent = () => {
 
 const WealthDashboard = () => {
     return (
-        <PlanningModeProvider>
-            <WealthDashboardContent />
-        </PlanningModeProvider>
+        <WealthDashboardContent />
     );
 };
 

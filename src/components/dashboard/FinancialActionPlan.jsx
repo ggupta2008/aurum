@@ -10,7 +10,8 @@ const FinancialActionPlan = () => {
         scopedProjection,
         targetMembers,
         formatCurrency,
-        profile
+        profile,
+        toggleStrategy
     } = useScopedWealth();
 
     const [expandedPhase, setExpandedPhase] = useState('today');
@@ -208,14 +209,15 @@ const FinancialActionPlan = () => {
         }
 
         // YEAR 1 - Foundation Building
-        // Simple Path for wealth maximization (default if no specific themes)
+        // Simple Path
         if (objectiveAnalysis.themes.length === 0 || !objectiveAnalysis.themes.includes('passive_income')) {
             recommendations.year1.push({
                 priority: 'high',
                 action: 'Implement Simple Path Strategy',
                 description: 'Shift to low-cost index funds (VTSAX/VTI)',
                 why: 'Reduce fees from 1.2% to 0.15% - saves millions over 25 years',
-                how: 'Open Vanguard account, set up automatic monthly investments'
+                how: 'Open Vanguard account, set up automatic monthly investments',
+                strategyId: 'simple_path'
             });
         }
 
@@ -225,7 +227,8 @@ const FinancialActionPlan = () => {
                 action: 'Roth Conversion Ladder',
                 description: 'Convert $25k-50k from Traditional IRA to Roth annually',
                 why: 'Pay taxes now at lower rates, enjoy tax-free growth forever',
-                how: 'Work with CPA to optimize conversion amount based on tax bracket'
+                how: 'Work with CPA to optimize conversion amount based on tax bracket',
+                strategyId: 'roth_conversion'
             });
         }
 
@@ -234,7 +237,8 @@ const FinancialActionPlan = () => {
             action: 'Max Out Tax-Advantaged Accounts',
             description: '401(k): $23k, IRA: $7k, HSA: $4.15k (if eligible)',
             why: 'Reduces taxable income by $34k+, saves ~$10k in taxes annually',
-            how: 'Increase payroll deductions, set up automatic IRA contributions'
+            how: 'Increase payroll deductions, set up automatic IRA contributions',
+            strategyId: 'max_retirement'
         });
 
         recommendations.year1.push({
@@ -252,7 +256,8 @@ const FinancialActionPlan = () => {
                 action: 'Backdoor Roth Mega Contributions',
                 description: 'After-tax 401(k) contributions + immediate Roth conversion',
                 why: 'Get $40k+ into Roth annually, bypassing income limits',
-                how: 'Check if employer plan allows, set up automatic conversions'
+                how: 'Check if employer plan allows, set up automatic conversions',
+                strategyId: 'backdoor_roth'
             });
         }
 
@@ -291,7 +296,8 @@ const FinancialActionPlan = () => {
                 action: 'Tax-Loss Harvesting System',
                 description: 'Implement automated tax-loss harvesting',
                 why: 'Generate $3k+ annual tax deductions, defer capital gains',
-                how: 'Use robo-advisor with TLH or manual rebalancing'
+                how: 'Use robo-advisor with TLH or manual rebalancing',
+                strategyId: 'direct_indexing'
             });
         }
 
@@ -555,23 +561,56 @@ const FinancialActionPlan = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                 {recommendations[expandedPhase]?.map((rec, idx) => {
                     const config = priorityConfig[rec.priority];
+                    const isStrategy = !!rec.strategyId;
+                    const isActive = isStrategy && profile.strategies?.[rec.strategyId]?.active;
 
                     return (
-                        <div key={idx} className="glass-panel" style={{
-                            padding: 'var(--space-4)',
-                            background: 'hsla(var(--bg-surface) / 0.5)',
-                            border: `1px solid hsla(var(--${config.color}) / 0.2)`,
-                            borderLeft: `4px solid hsl(var(--${config.color}))`
-                        }}>
+                        <div
+                            key={idx}
+                            onClick={() => isStrategy && toggleStrategy(rec.strategyId)}
+                            className={isStrategy ? "glass-panel-interactive" : "glass-panel"}
+                            style={{
+                                padding: 'var(--space-4)',
+                                background: isActive ? 'hsla(var(--gold-primary) / 0.08)' : 'hsla(var(--bg-surface) / 0.5)',
+                                border: isActive
+                                    ? '1px solid hsl(var(--gold-primary))'
+                                    : `1px solid hsla(var(--${config.color}) / 0.2)`,
+                                borderLeft: isActive
+                                    ? '4px solid hsl(var(--gold-primary))'
+                                    : `4px solid hsl(var(--${config.color}))`,
+                                cursor: isStrategy ? 'pointer' : 'default',
+                                position: 'relative'
+                            }}
+                        >
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 'var(--space-3)' }}>
-                                <div style={{ flex: 1 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: '6px' }}>
-                                        <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'white' }}>
-                                            {rec.action}
-                                        </span>
-                                    </div>
-                                    <div style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))', lineHeight: 1.5 }}>
-                                        {rec.description}
+                                <div style={{ flex: 1, display: 'flex', gap: '12px' }}>
+                                    {/* Checkbox for strategies */}
+                                    {isStrategy && (
+                                        <div style={{
+                                            flexShrink: 0,
+                                            width: '20px',
+                                            height: '20px',
+                                            borderRadius: '4px',
+                                            border: isActive ? 'none' : '2px solid hsla(var(--text-muted)/0.5)',
+                                            background: isActive ? 'hsl(var(--gold-primary))' : 'transparent',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            marginTop: '2px'
+                                        }}>
+                                            {isActive && <CheckCircle2 size={14} color="white" />}
+                                        </div>
+                                    )}
+
+                                    <div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: '6px' }}>
+                                            <span style={{ fontSize: '0.9rem', fontWeight: 700, color: isActive ? 'hsl(var(--gold-primary))' : 'white' }}>
+                                                {rec.action}
+                                            </span>
+                                        </div>
+                                        <div style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))', lineHeight: 1.5 }}>
+                                            {rec.description}
+                                        </div>
                                     </div>
                                 </div>
                                 <div style={{

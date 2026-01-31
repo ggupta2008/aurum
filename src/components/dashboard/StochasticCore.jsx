@@ -110,7 +110,7 @@ const StochasticCore = () => {
                         {successRate}%
                     </div>
                     <div style={{ fontSize: '0.6rem', color: 'hsl(var(--gold-primary))', fontWeight: 700, textTransform: 'uppercase' }}>
-                        Safety Confidence
+                        Stress Test
                     </div>
                 </div>
             </div>

@@ -76,9 +76,22 @@ export const WealthProvider = ({ children }) => {
     const [monteCarlo, setMonteCarlo] = useState([]);
     const [recommendations, setRecommendations] = useState([]);
     const [privacyMode, setPrivacyMode] = useState(false);
+    const [theme, setTheme] = useState(() => {
+        return localStorage.getItem('aurum_ui_theme') || 'dark';
+    });
 
     // Derived IRS groupings
     const taxUnits = identifyTaxUnits(profile.family);
+
+    // Apply theme to document
+    useEffect(() => {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('aurum_ui_theme', theme);
+    }, [theme]);
+
+    const toggleTheme = () => {
+        setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+    };
 
     // Auto-save profile changes to current client
     useEffect(() => {
@@ -231,6 +244,22 @@ export const WealthProvider = ({ children }) => {
         });
     };
 
+    const applyAIStrategies = (aiMeta) => {
+        if (!aiMeta || !aiMeta.active_strategies) return;
+
+        setProfile(prev => {
+            const newStrategies = { ...prev.strategies };
+            aiMeta.active_strategies.forEach(strat => {
+                const { id, active, ...inputs } = strat;
+                newStrategies[id] = {
+                    active,
+                    inputs: { ...(newStrategies[id]?.inputs || {}), ...inputs }
+                };
+            });
+            return { ...prev, strategies: newStrategies };
+        });
+    };
+
     // ========== CLIENT MANAGEMENT FUNCTIONS ==========
 
     const switchClient = (clientId) => {
@@ -306,6 +335,7 @@ export const WealthProvider = ({ children }) => {
             removeFamilyMember,
             toggleStrategy,
             updateStrategyInput,
+            applyAIStrategies,
             applyAutopilot,
             updateMarketRegime,
             // Client management
@@ -319,7 +349,10 @@ export const WealthProvider = ({ children }) => {
             // Privacy mode
             privacyMode,
             togglePrivacyMode,
-            formatCurrency
+            formatCurrency,
+            // Theme
+            theme,
+            toggleTheme
         }}>
             {children}
         </WealthContext.Provider>

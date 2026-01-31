@@ -1,7 +1,6 @@
 import React from 'react';
+import { TrendingDown, DollarSign, Users, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useScopedWealth } from '../../hooks/useScopedWealth';
-import { TrendingDown, DollarSign, Users, AlertTriangle } from 'lucide-react';
-
 const TaxWaterfall = () => {
     const {
         scopedProjection,
@@ -98,75 +97,114 @@ const TaxWaterfall = () => {
 
     return (
         <div className="glass-panel anim-fade-up anim-delay-3" style={{
-            padding: 'var(--space-5)',
+            padding: 'var(--space-6)',
             display: 'flex',
             flexDirection: 'column',
-            gap: 'var(--space-4)'
+            gap: 'var(--space-5)'
         }}>
             <div>
                 <h3 style={{
-                    fontSize: '1.1rem',
-                    fontWeight: 600,
-                    marginBottom: 'var(--space-1)'
+                    fontSize: '1.2rem',
+                    fontWeight: 700,
+                    marginBottom: 'var(--space-2)',
+                    fontFamily: 'Space Grotesk, sans-serif',
+                    color: 'hsl(var(--text-primary))'
                 }}>
-                    Tax Waterfall Analysis
+                    Fiscal Impact Analysis
                 </h3>
                 <p style={{
-                    fontSize: '0.8rem',
-                    color: 'hsl(var(--text-muted))'
+                    fontSize: '0.85rem',
+                    color: 'hsl(var(--text-secondary))',
+                    maxWidth: '90%'
                 }}>
-                    Year 25 wealth distribution showing tax leakage and net legacy
+                    Projected wealth erosion due to tax liabilities at Year 25 transfer event
                 </p>
             </div>
 
             {/* Waterfall Visualization */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                 {waterfallData.map((item, idx) => {
                     const Icon = item.icon;
                     const barWidth = Math.abs((item.value / maxValue) * 100);
                     const isLast = idx === waterfallData.length - 1;
+                    const isNegative = !item.isPositive;
 
                     return (
-                        <div key={idx}>
+                        <div key={idx} style={{ position: 'relative' }}>
+                            {/* Connector Line */}
+                            {!isLast && (
+                                <div style={{
+                                    position: 'absolute',
+                                    left: '19px',
+                                    top: '32px',
+                                    bottom: '-24px',
+                                    width: '2px',
+                                    background: 'hsla(var(--text-primary)/0.05)',
+                                    zIndex: 0
+                                }} />
+                            )}
+
                             <div style={{
                                 display: 'flex',
                                 justifyContent: 'space-between',
                                 alignItems: 'center',
-                                marginBottom: '6px'
+                                marginBottom: '8px',
+                                position: 'relative',
+                                zIndex: 1
                             }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                                    <Icon size={14} style={{ color: item.color }} />
-                                    <span style={{
-                                        fontSize: '0.75rem',
-                                        color: 'hsl(var(--text-secondary))',
-                                        fontWeight: isLast ? 700 : 500
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                                    <div style={{
+                                        width: '40px',
+                                        height: '40px',
+                                        borderRadius: '10px',
+                                        background: isNegative ? 'hsla(var(--danger)/0.1)' : 'hsla(var(--success)/0.1)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        border: `1px solid ${isNegative ? 'hsla(var(--danger)/0.2)' : 'hsla(var(--success)/0.2)'}`
                                     }}>
-                                        {item.label}
-                                    </span>
+                                        <Icon size={18} style={{ color: item.color }} />
+                                    </div>
+                                    <div>
+                                        <div style={{
+                                            fontSize: '0.9rem',
+                                            color: 'hsl(var(--text-primary))',
+                                            fontWeight: 600,
+                                            fontFamily: 'Space Grotesk, sans-serif'
+                                        }}>
+                                            {item.label}
+                                        </div>
+                                        <div style={{ fontSize: '0.75rem', color: 'hsl(var(--text-muted))' }}>
+                                            {(item.value / maxValue * 100).toFixed(1)}% of Gross
+                                        </div>
+                                    </div>
                                 </div>
                                 <span style={{
-                                    fontSize: '0.85rem',
+                                    fontSize: '1rem',
                                     fontWeight: 700,
-                                    color: item.isPositive ? 'white' : item.color
+                                    fontFamily: 'Space Grotesk, sans-serif',
+                                    color: item.isPositive ? 'hsl(var(--text-primary))' : item.color
                                 }}>
-                                    {item.isPositive ? formatCurrency(item.value, { notation: 'compact', maximumFractionDigits: 1 }) : formatCurrency(Math.abs(item.value), { notation: 'compact', maximumFractionDigits: 1 })}
+                                    {item.isPositive ? '' : '-'}{formatCurrency(Math.abs(item.value), { notation: 'compact', maximumFractionDigits: 1 })}
                                 </span>
                             </div>
+
+                            {/* Bar Visual */}
                             <div style={{
                                 width: '100%',
-                                height: isLast ? '32px' : '24px',
-                                background: 'hsla(var(--bg-void) / 0.3)',
-                                borderRadius: 'var(--radius-sm)',
+                                height: '8px',
+                                background: 'hsla(var(--bg-void) / 0.6)',
+                                borderRadius: 'var(--radius-full)',
                                 overflow: 'hidden',
-                                position: 'relative'
+                                padding: '2px' // inner padding
                             }}>
                                 <div style={{
                                     width: `${barWidth}%`,
                                     height: '100%',
                                     background: item.color,
-                                    borderRadius: 'var(--radius-sm)',
-                                    transition: 'width 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    boxShadow: isLast ? '0 0 20px hsla(var(--success) / 0.4)' : 'none'
+                                    borderRadius: 'var(--radius-full)',
+                                    transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    boxShadow: `0 0 12px ${item.color}`
                                 }} />
                             </div>
                         </div>
@@ -176,31 +214,36 @@ const TaxWaterfall = () => {
 
             {/* Summary Stats */}
             <div style={{
-                marginTop: 'var(--space-2)',
-                padding: 'var(--space-4)',
-                background: effectiveTaxRate > 40
-                    ? 'hsla(var(--danger) / 0.1)'
-                    : 'hsla(var(--info) / 0.05)',
-                borderRadius: 'var(--radius-md)',
-                border: `1px solid ${effectiveTaxRate > 40 ? 'hsla(var(--danger) / 0.2)' : 'hsla(var(--info) / 0.1)'}`,
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 'var(--space-4)',
+                marginTop: 'var(--space-2)'
             }}>
-                <div>
-                    <div style={{ fontSize: '0.65rem', color: 'hsl(var(--text-dim))', marginBottom: '2px' }}>
+                <div style={{
+                    padding: 'var(--space-4)',
+                    background: 'hsla(var(--bg-void)/0.3)',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid hsla(var(--text-primary)/0.05)'
+                }}>
+                    <div style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
                         Effective Tax Rate
                     </div>
-                    <div style={{ fontSize: '1.5rem', fontWeight: 800, color: effectiveTaxRate > 40 ? 'hsl(var(--danger))' : 'white' }}>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 700, fontFamily: 'Space Grotesk', color: effectiveTaxRate > 40 ? 'hsl(var(--danger))' : 'hsl(var(--success))' }}>
                         {effectiveTaxRate.toFixed(1)}%
                     </div>
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '0.65rem', color: 'hsl(var(--text-dim))', marginBottom: '2px' }}>
-                        Total Tax Leakage
+
+                <div style={{
+                    padding: 'var(--space-4)',
+                    background: 'hsla(var(--bg-void)/0.3)',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid hsla(var(--text-primary)/0.05)'
+                }}>
+                    <div style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
+                        Total Leakage
                     </div>
-                    <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'hsl(var(--danger))' }}>
-                        {formatCurrency(totalTaxDrag)}
+                    <div style={{ fontSize: '1.4rem', fontWeight: 700, fontFamily: 'Space Grotesk', color: 'hsl(var(--danger))' }}>
+                        {formatCurrency(totalTaxDrag, { notation: 'compact' })}
                     </div>
                 </div>
             </div>
@@ -209,54 +252,69 @@ const TaxWaterfall = () => {
             {taxableEstate > 0 && (
                 <div style={{
                     padding: 'var(--space-4)',
-                    background: 'hsla(var(--gold-primary) / 0.05)',
+                    background: 'linear-gradient(135deg, hsla(var(--danger)/0.05), transparent)',
                     borderRadius: 'var(--radius-md)',
-                    border: '1px solid hsla(var(--gold-primary) / 0.2)'
+                    border: '1px solid hsla(var(--danger) / 0.2)',
+                    display: 'flex',
+                    gap: '12px'
                 }}>
-                    <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 'var(--space-2)',
-                        marginBottom: 'var(--space-2)'
-                    }}>
-                        <AlertTriangle size={14} className="text-gold" />
-                        <span style={{
-                            fontSize: '0.7rem',
+                    <AlertTriangle size={20} className="text-danger" style={{ flexShrink: 0, marginTop: '2px' }} />
+                    <div>
+                        <div style={{
+                            fontSize: '0.8rem',
                             fontWeight: 700,
-                            color: 'hsl(var(--gold-primary))',
+                            color: 'hsl(var(--danger))',
                             textTransform: 'uppercase',
-                            letterSpacing: '0.05em'
+                            letterSpacing: '0.05em',
+                            marginBottom: '4px'
                         }}>
-                            Estate Tax Alert
-                        </span>
+                            Estate Tax Exposure
+                        </div>
+                        <p style={{
+                            fontSize: '0.8rem',
+                            color: 'hsl(var(--text-secondary))',
+                            lineHeight: 1.5,
+                            margin: 0
+                        }}>
+                            Projected estate exceeds federal exemption by <strong style={{ color: 'hsl(var(--text-primary))' }}>{formatCurrency(taxableEstate)}</strong>.
+                            Heirs face a <strong style={{ color: 'hsl(var(--danger))' }}>{formatCurrency(federalEstateTax)}</strong> liquidity event.
+                            Urgent: Consider SLAT or IDGT structures.
+                        </p>
                     </div>
-                    <p style={{
-                        fontSize: '0.75rem',
-                        color: 'hsl(var(--text-secondary))',
-                        lineHeight: 1.5
-                    }}>
-                        Your projected estate exceeds the federal exemption by <strong>{formatCurrency(taxableEstate)}</strong>.
-                        Without advanced planning (SLAT, IDGT, or CLAT), your heirs will face a <strong>{formatCurrency(federalEstateTax)}</strong> liquidity
-                        event. Consider implementing trust structures to freeze valuation and shield growth.
-                    </p>
                 </div>
             )}
 
             {effectiveTaxRate < 25 && (
                 <div style={{
                     padding: 'var(--space-4)',
-                    background: 'hsla(var(--success) / 0.05)',
+                    background: 'linear-gradient(135deg, hsla(var(--success)/0.05), transparent)',
                     borderRadius: 'var(--radius-md)',
-                    border: '1px solid hsla(var(--success) / 0.2)'
+                    border: '1px solid hsla(var(--success) / 0.2)',
+                    display: 'flex',
+                    gap: '12px'
                 }}>
-                    <p style={{
-                        fontSize: '0.75rem',
-                        color: 'hsl(var(--text-secondary))',
-                        lineHeight: 1.5
-                    }}>
-                        ✅ <strong>Excellent tax efficiency.</strong> Your effective rate of {effectiveTaxRate.toFixed(1)}%
-                        indicates strong strategic planning. Continue optimizing Roth conversions and asset location to maintain this advantage.
-                    </p>
+                    <CheckCircle size={20} className="text-success" style={{ flexShrink: 0, marginTop: '2px' }} />
+                    <div>
+                        <div style={{
+                            fontSize: '0.8rem',
+                            fontWeight: 700,
+                            color: 'hsl(var(--success))',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                            marginBottom: '4px'
+                        }}>
+                            Optimal Efficiency
+                        </div>
+                        <p style={{
+                            fontSize: '0.8rem',
+                            color: 'hsl(var(--text-secondary))',
+                            lineHeight: 1.5,
+                            margin: 0
+                        }}>
+                            Effective rate of <strong>{effectiveTaxRate.toFixed(1)}%</strong> indicates top-tier tax efficiency.
+                            Current trust structures and asset location strategies are performing optimally.
+                        </p>
+                    </div>
                 </div>
             )}
         </div>

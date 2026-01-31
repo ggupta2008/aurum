@@ -44,14 +44,16 @@ describe('Net Worth Integrity Audit', () => {
 
         // Assets: 500k (Clan Cash) + 1000k (Clan RE) + 200k (Stocks) + 300k (Retirement) + 100k (Member Cash) = 2,100,000
         // Liabilities: 400k (Clan Mortgage)
-        // Net Worth: 1,700,000
+        // Gross NW: 1,700,000
+        // Discount: 300k (Retirement) * 30% = 90,000
+        // Spendable NW: 1,610,000
 
         const targetMembers = getTargetMembers(profile, 'household');
         const scopeNW = getScopedCurrentWealth(profile, targetMembers);
-        expect(scopeNW).toBe(1700000);
+        expect(scopeNW).toBe(1610000);
 
         const projectResult = calculateProjection(profile);
-        expect(projectResult.data[0].baseline).toBe(1700000);
+        expect(projectResult.data[0].baseline).toBe(1610000);
     });
 
     it('should handle Consolidation Clan Debt (Unsecured)', () => {

@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import '../styles/index.css';
 import AdvisorInterface from './AdvisorInterface';
 import AISettings from './AISettings';
-import { Sparkles, X, LayoutDashboard, Castle, Eye, EyeOff } from 'lucide-react';
+import { Sparkles, X, LayoutDashboard, Castle, Eye, EyeOff, Moon, Sun } from 'lucide-react';
 import { useWealth } from '../context/WealthContext';
 
 const Layout = ({ children, currentView, setView }) => {
     const [isAdvisorOpen, setIsAdvisorOpen] = useState(false);
-    const { privacyMode, togglePrivacyMode } = useWealth();
+    const { privacyMode, togglePrivacyMode, theme, toggleTheme } = useWealth();
 
     return (
         <div className="app-grid" style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -18,7 +18,7 @@ const Layout = ({ children, currentView, setView }) => {
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 borderBottom: '1px solid hsla(var(--text-primary) / 0.08)',
-                background: 'var(--bg-void)',
+                background: 'hsl(var(--bg-void))',
                 zIndex: 100
             }}>
                 {/* Brand */}
@@ -55,7 +55,7 @@ const Layout = ({ children, currentView, setView }) => {
                 <nav style={{
                     display: 'flex',
                     gap: 'var(--space-1)',
-                    background: 'hsla(var(--bg-surface) / 0.2)',
+                    background: 'hsla(var(--bg-surface) / 0.5)',
                     padding: '4px',
                     borderRadius: 'var(--radius-lg)',
                     border: '1px solid hsla(var(--text-primary) / 0.04)'
@@ -100,15 +100,31 @@ const Layout = ({ children, currentView, setView }) => {
                         <Castle size={14} />
                         The Vault
                     </button>
-                    <button className="nav-btn" disabled style={{ opacity: 0.3, padding: 'var(--space-2) var(--space-4)', fontSize: '0.8rem' }}>
-                        Alpha
-                    </button>
                 </nav>
 
                 {/* Copilot & Profile Actions */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                     {/* AI Settings */}
                     <AISettings />
+
+                    {/* Theme Toggle */}
+                    <button
+                        onClick={toggleTheme}
+                        style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: 'hsl(var(--text-dim))',
+                            cursor: 'pointer',
+                            padding: 'var(--space-2)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'all 0.2s ease'
+                        }}
+                        title={theme === 'dark' ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                    >
+                        {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                    </button>
 
                     {/* Privacy Toggle */}
                     <button
@@ -129,28 +145,6 @@ const Layout = ({ children, currentView, setView }) => {
                         {privacyMode ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
 
-                    <button
-                        onClick={() => setIsAdvisorOpen(!isAdvisorOpen)}
-                        className={`anim-pulse-slow ${isAdvisorOpen ? 'text-gold' : ''}`}
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 'var(--space-2)',
-                            background: isAdvisorOpen ? 'hsla(var(--gold-primary) / 0.15)' : 'hsla(var(--gold-primary) / 0.05)',
-                            border: `1px solid ${isAdvisorOpen ? 'hsla(var(--gold-primary) / 0.3)' : 'hsla(var(--gold-primary) / 0.1)'}`,
-                            padding: 'var(--space-2) var(--space-4)',
-                            borderRadius: 'var(--radius-full)',
-                            color: 'hsl(var(--gold-primary))',
-                            fontSize: '0.75rem',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                            letterSpacing: '0.05em'
-                        }}
-                    >
-                        <Sparkles size={14} />
-                        {isAdvisorOpen ? 'ANALYZING...' : 'ASK STRATAGEM'}
-                    </button>
 
                     <div style={{
                         width: '32px',
@@ -238,7 +232,7 @@ const Layout = ({ children, currentView, setView }) => {
                     </div>
                 </aside>
             </div>
-        </div>
+        </div >
     );
 };
 
