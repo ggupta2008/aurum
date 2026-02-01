@@ -4,7 +4,7 @@ import { calculateBenefitFactor, findBreakevenAge } from '../../utils/engine/soc
 import { TrendingUp, Landmark, ShieldCheck, Calendar, Info, Target, AlertCircle } from 'lucide-react';
 
 const SocialSecurityOptimizer = () => {
-    const { profile, formatCurrency, updateStrategyInput, toggleStrategy } = useScopedWealth();
+    const { profile, formatCurrency, updateStrategyInput } = useScopedWealth();
     const [showInfo, setShowInfo] = useState(false);
 
     const ssStrategy = profile.strategies?.['social_security'] || { active: false, inputs: { claimAge: 67, estimatedPIA: 3000 } };

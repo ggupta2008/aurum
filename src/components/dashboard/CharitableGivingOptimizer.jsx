@@ -5,9 +5,7 @@ import { TrendingUp, Heart, DollarSign, Info, Gift, Percent, Calendar } from 'lu
 const CharitableGivingOptimizer = () => {
     const {
         profile,
-        planningScope,
         targetMembers,
-        scopedAge,
         scopedIncome,
         scopedTaxBuckets
     } = useScopedWealth();
@@ -15,7 +13,6 @@ const CharitableGivingOptimizer = () => {
 
     // DAF Strategy Inputs
     const [dafAmount, setDafAmount] = useState(50000);
-    const [dafYears, setDafYears] = useState(5);
 
     // QCD Strategy Inputs
     const [qcdAmount, setQcdAmount] = useState(25000);
@@ -23,10 +20,9 @@ const CharitableGivingOptimizer = () => {
     // CRT Strategy Inputs
     const [crtPrincipal, setCrtPrincipal] = useState(500000);
     const [crtPayoutRate, setCrtPayoutRate] = useState(5);
-    const [crtYears, setCrtYears] = useState(20);
+    const [crtYears] = useState(20);
 
     // Values from hook
-    const primaryAge = scopedAge;
     const scopedTaxDeferred = scopedTaxBuckets.taxDeferred;
 
     // Tax rates (federal + state)
@@ -93,7 +89,6 @@ const CharitableGivingOptimizer = () => {
     const deductionTaxSavings = charitableDeduction * combinedRate;
 
     const crtTotalTaxBenefit = capitalGainsTaxAvoided + deductionTaxSavings;
-    const crtNetCost = crtPrincipal - crtLifetimeIncome - crtTotalTaxBenefit;
 
     // ========== COMBINED IMPACT ==========
     const totalAnnualGiving = dafAmount + (qcdEligible ? qcdActualAmount : 0);

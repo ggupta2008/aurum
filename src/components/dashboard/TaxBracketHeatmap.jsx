@@ -6,7 +6,6 @@ const TaxBracketHeatmap = () => {
     const {
         profile,
         scopedProjection,
-        planningScope,
         targetMembers,
         scopedAge,
         scopedTaxBuckets

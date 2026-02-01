@@ -1,12 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import '../styles/index.css';
-import AdvisorInterface from './AdvisorInterface';
 import AISettings from './AISettings';
-import { Sparkles, X, LayoutDashboard, Castle, Eye, EyeOff, Moon, Sun } from 'lucide-react';
+import { LayoutDashboard, Castle, Eye, EyeOff, Moon, Sun } from 'lucide-react';
 import { useWealth } from '../context/WealthContext';
 
 const Layout = ({ children, currentView, setView }) => {
-    const [isAdvisorOpen, setIsAdvisorOpen] = useState(false);
     const { privacyMode, togglePrivacyMode, theme, toggleTheme } = useWealth();
 
     return (
@@ -175,62 +173,6 @@ const Layout = ({ children, currentView, setView }) => {
                 }}>
                     {children}
                 </main>
-
-                {/* Slide-out Copilot - True Overlay Appearance */}
-                <aside style={{
-                    width: isAdvisorOpen ? '420px' : '0',
-                    borderLeft: isAdvisorOpen ? '1px solid hsla(var(--text-primary) / 0.15)' : 'none',
-                    background: 'hsla(var(--bg-void) / 0.4)',
-                    backdropFilter: 'blur(40px) saturate(180%)',
-                    transition: 'width 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
-                    overflow: 'hidden',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    boxShadow: isAdvisorOpen ? '-20px 0 50px -10px hsla(0,0%,0%,0.5)' : 'none'
-                }}>
-                    <div style={{
-                        minWidth: '420px',
-                        height: '100%',
-                        display: 'flex',
-                        flexDirection: 'column'
-                    }}>
-                        <div style={{
-                            padding: 'var(--space-5) var(--space-6)',
-                            borderBottom: '1px solid hsla(var(--text-primary) / 0.1)',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            background: 'hsla(var(--gold-primary) / 0.02)'
-                        }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                                <Sparkles size={16} className="text-gold" />
-                                <h3 style={{ fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'hsl(var(--text-primary))' }}>
-                                    Stratagem Copilot
-                                </h3>
-                            </div>
-                            <button
-                                onClick={() => setIsAdvisorOpen(false)}
-                                style={{
-                                    background: 'hsla(var(--text-primary) / 0.05)',
-                                    border: 'none',
-                                    color: 'white',
-                                    cursor: 'pointer',
-                                    width: '24px',
-                                    height: '24px',
-                                    borderRadius: '6px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center'
-                                }}
-                            >
-                                <X size={14} />
-                            </button>
-                        </div>
-                        <div style={{ flex: 1, overflow: 'hidden' }}>
-                            <AdvisorInterface />
-                        </div>
-                    </div>
-                </aside>
             </div>
         </div >
     );

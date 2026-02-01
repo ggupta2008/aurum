@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import Layout from './components/Layout';
-import AdvisorInterface from './components/AdvisorInterface';
 import WealthDashboard from './components/dashboard/WealthDashboard';
 import PortfolioView from './components/PortfolioView';
 import DevTools from './components/DevTools';

@@ -2,6 +2,56 @@ import React, { useState } from 'react';
 import { useScopedWealth } from '../../hooks/useScopedWealth';
 import { Info, ChevronDown, ChevronUp, Calculator, TrendingUp, Shield, Zap } from 'lucide-react';
 
+const Section = ({ title, icon, children, sectionKey, summary, expandedSection, toggleSection }) => {
+    const Icon = icon;
+    return (
+        <div className="glass-panel" style={{ marginBottom: 'var(--space-4)' }}>
+        <button
+            onClick={() => toggleSection(sectionKey)}
+            style={{
+                width: '100%',
+                background: 'transparent',
+                border: 'none',
+                padding: 'var(--space-4)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                cursor: 'pointer',
+                color: 'white'
+            }}
+        >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                <div style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: 'var(--radius-md)',
+                    background: 'hsla(var(--gold-primary) / 0.1)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                }}>
+                    <Icon size={16} className="text-gold" />
+                </div>
+                <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{title}</div>
+                    <div style={{ fontSize: '0.7rem', color: 'hsl(var(--text-dim))' }}>{summary}</div>
+                </div>
+            </div>
+            {expandedSection === sectionKey ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+        </button>
+        {expandedSection === sectionKey && (
+            <div style={{
+                padding: 'var(--space-4)',
+                borderTop: '1px solid hsla(var(--gold-primary) / 0.1)',
+                fontSize: '0.8rem',
+                color: 'hsl(var(--text-secondary))'
+            }}>
+                {children}
+            </div>
+        )}
+    </div>
+};
+
 const CalculationTransparency = () => {
     const {
         scopedCurrentWealth,
@@ -32,54 +82,6 @@ const CalculationTransparency = () => {
     const scopeName = planningScope === 'household'
         ? 'Grand Clan (All Family Members)'
         : taxUnits.find(u => u.id === planningScope)?.name || 'Current Unit';
-
-    const Section = ({ title, icon: Icon, children, sectionKey, summary }) => (
-        <div className="glass-panel" style={{ marginBottom: 'var(--space-4)' }}>
-            <button
-                onClick={() => toggleSection(sectionKey)}
-                style={{
-                    width: '100%',
-                    background: 'transparent',
-                    border: 'none',
-                    padding: 'var(--space-4)',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    cursor: 'pointer',
-                    color: 'white'
-                }}
-            >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                    <div style={{
-                        width: '32px',
-                        height: '32px',
-                        borderRadius: 'var(--radius-md)',
-                        background: 'hsla(var(--gold-primary) / 0.1)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                    }}>
-                        <Icon size={16} className="text-gold" />
-                    </div>
-                    <div style={{ textAlign: 'left' }}>
-                        <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{title}</div>
-                        <div style={{ fontSize: '0.7rem', color: 'hsl(var(--text-dim))' }}>{summary}</div>
-                    </div>
-                </div>
-                {expandedSection === sectionKey ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-            </button>
-            {expandedSection === sectionKey && (
-                <div style={{
-                    padding: 'var(--space-4)',
-                    borderTop: '1px solid hsla(var(--gold-primary) / 0.1)',
-                    fontSize: '0.8rem',
-                    color: 'hsl(var(--text-secondary))'
-                }}>
-                    {children}
-                </div>
-            )}
-        </div>
-    );
 
     return (
         <div style={{ marginBottom: 'var(--space-6)' }}>
@@ -119,6 +121,8 @@ const CalculationTransparency = () => {
                 icon={Calculator}
                 sectionKey="networth"
                 summary={formatCurrency(scopedCurrentWealth)}
+                expandedSection={expandedSection}
+                toggleSection={toggleSection}
             >
                 <div style={{ marginBottom: 'var(--space-4)' }}>
                     <p style={{ marginBottom: 'var(--space-3)', lineHeight: 1.6 }}>
@@ -223,6 +227,8 @@ const CalculationTransparency = () => {
                 icon={TrendingUp}
                 sectionKey="projection"
                 summary={`${formatCurrency(endNW)} (Optimized) | ${formatCurrency(endNWBaseline)} (Baseline)`}
+                expandedSection={expandedSection}
+                toggleSection={toggleSection}
             >
                 <div style={{ marginBottom: 'var(--space-4)' }}>
                     <p style={{ marginBottom: 'var(--space-3)', lineHeight: 1.6 }}>
@@ -281,6 +287,8 @@ const CalculationTransparency = () => {
                 icon={Shield}
                 sectionKey="safety"
                 summary={`${successRatio}% success rate`}
+                expandedSection={expandedSection}
+                toggleSection={toggleSection}
             >
                 <div style={{ marginBottom: 'var(--space-4)' }}>
                     <p style={{ marginBottom: 'var(--space-3)', lineHeight: 1.6 }}>
@@ -328,6 +336,8 @@ const CalculationTransparency = () => {
                 icon={Zap}
                 sectionKey="alpha"
                 summary={wealthAlpha > 0 ? formatCurrency(wealthAlpha) : 'Enable strategies to generate alpha'}
+                expandedSection={expandedSection}
+                toggleSection={toggleSection}
             >
                 <div style={{ marginBottom: 'var(--space-4)' }}>
                     <p style={{ marginBottom: 'var(--space-3)', lineHeight: 1.6 }}>

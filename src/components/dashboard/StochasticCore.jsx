@@ -10,7 +10,7 @@ const StochasticCore = () => {
 
     // Trigger visual simulation when profile changes
     useEffect(() => {
-        setIsCalculating(true);
+        requestAnimationFrame(() => setIsCalculating(true));
         const timer = setTimeout(() => setIsCalculating(false), 1500);
 
         const canvas = canvasRef.current;

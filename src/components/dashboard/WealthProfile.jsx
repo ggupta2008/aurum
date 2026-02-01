@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { useScopedWealth } from '../../hooks/useScopedWealth';
 import { ChevronDown, ChevronUp, DollarSign, Wallet, Shield, Lock, Info } from 'lucide-react';
 
-const StatRow = ({ label, value, icon: Icon, colorClass, formatCurrency }) => (
-    <div style={{ marginBottom: 'var(--space-3)' }}>
+const StatRow = ({ label, value, icon, colorClass, formatCurrency }) => {
+    const Icon = icon;
+    return (
+        <div style={{ marginBottom: 'var(--space-3)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Icon size={12} className={colorClass || 'text-muted'} />
@@ -15,11 +17,12 @@ const StatRow = ({ label, value, icon: Icon, colorClass, formatCurrency }) => (
                 {formatCurrency(value, { notation: 'compact' })}
             </span>
         </div>
-    </div>
-);
+        </div>
+    );
+};
 
 const WealthProfile = () => {
-    const { scopedTaxBuckets, planningScope, formatCurrency } = useScopedWealth();
+    const { scopedTaxBuckets, formatCurrency } = useScopedWealth();
     const [isOpen, setIsOpen] = useState(true);
     const [showInfo, setShowInfo] = useState(false);
 

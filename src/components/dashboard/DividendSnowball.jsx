@@ -4,7 +4,7 @@ import { TrendingUp, ArrowRight, Zap, Coffee, Home, ShieldCheck } from 'lucide-r
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 const DividendSnowball = () => {
-    const { profile, formatCurrency, scopedProjection } = useScopedWealth();
+    const { profile, formatCurrency } = useScopedWealth();
 
     // Calculate current annual dividends
     let annualDividends = 0;

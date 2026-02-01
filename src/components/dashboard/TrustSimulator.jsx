@@ -5,10 +5,7 @@ import { Shield, Lock, ArrowRight, TrendingUp, AlertCircle, Info, X } from 'luci
 
 const TrustSimulator = () => {
     const {
-        profile,
-        planningScope,
         targetMembers,
-        scopedProjection,
         scopedCurrentWealth
     } = useScopedWealth();
     const [showMethodology, setShowMethodology] = useState(false);
@@ -16,7 +13,6 @@ const TrustSimulator = () => {
     // Strategy State
     const [slatFunding, setSlatFunding] = useState(0); // Spousal Lifetime Access Trust
     const [ilitBenefit, setIlitBenefit] = useState(0); // Irrevocable Life Insurance Trust
-    const [idgtFunding, setIdgtFunding] = useState(0); // Intentionally Defective Grantor Trust
 
     const formatCurrency = (v) => new Intl.NumberFormat('en-US', {
         style: 'currency',
@@ -52,44 +48,30 @@ const TrustSimulator = () => {
     // Future Value of SLAT assets
     const slatFutureValue = slatFunding * Math.pow(1 + GROWTH_RATE, YEARS);
 
-    // 2. IDGT: Remove Principal + Growth. Consumes Exemption. (Simplified)
-    const idgtFutureValue = idgtFunding * Math.pow(1 + GROWTH_RATE, YEARS);
-
-    // 3. ILIT: Adds Tax-Free Death Benefit. Does not consume exemption (usually funded via annual gifts).
+    // 2. ILIT: Adds Tax-Free Death Benefit. Does not consume exemption (usually funded via annual gifts).
     const ilitFutureValue = ilitBenefit; // Fixed death benefit amount
 
     // Adjusted Calculation
     // Assets remaining in taxable estate
-    const remainingAssets = Math.max(0, currentAssets - slatFunding - idgtFunding);
+    const remainingAssets = Math.max(0, currentAssets - slatFunding);
     const futureRemainingEstate = remainingAssets * Math.pow(1 + GROWTH_RATE, YEARS);
 
     // Exemption remaining usage
-    // Moving assets to SLAT/IDGT uses up lifetime exemption *today*
-    const exemptionUsed = slatFunding + idgtFunding;
-    // The exemption we used grows? No, exemption is a fixed bucket. 
-    // Actually, creating a SLAT uses exemption at current value. The future growth is what escapes tax.
-    // So distinct comparison:
-    // Future Taxable = FutureRemainingAsset - (FutureExemption - UsedExemption?)
-    // Complex, but simplified: We effectively locked the exemption usage at 'slatFunding'.
-    // Better math: Total Estate = FutureRemaining + FutureSLAT + FutureIDGT.
-    // Taxable part is only FutureRemaining.
-    // BUT we have less exemption available for that FutureRemaining because we used some for SLAT/IDGT.
-    // Remaining Exemption = FutureExemption - (slatFunding + idgtFunding * inflation_adjustment? No, nominal usage).
-    // Let's assume simple nominal usage.
+    // Moving assets to SLAT uses up lifetime exemption *today*
+    const exemptionUsed = slatFunding;
 
     const remainingExemption = Math.max(0, futureExemption - exemptionUsed);
     const taxableEstateOptimized = Math.max(0, futureRemainingEstate - remainingExemption);
     const taxOptimized = taxableEstateOptimized * ESTATE_TAX_RATE;
 
-    // Total Value to Heirs = (Net Remaining Estate) + (Full SLAT) + (Full IDGT) + (Full ILIT)
-    const netToHeirsOptimized = (futureRemainingEstate - taxOptimized) + slatFutureValue + idgtFutureValue + ilitFutureValue;
+    // Total Value to Heirs = (Net Remaining Estate) + (Full SLAT) + (Full ILIT)
+    const netToHeirsOptimized = (futureRemainingEstate - taxOptimized) + slatFutureValue + ilitFutureValue;
 
-    const taxSavings = taxBaseline - taxOptimized;
     const efficiencyGain = netToHeirsOptimized - netToHeirsBaseline;
 
     const data = [
         { name: 'Current Path', value: netToHeirsBaseline, tax: taxBaseline, total: futureEstateValue },
-        { name: 'With Vault', value: netToHeirsOptimized, tax: taxOptimized, total: futureRemainingEstate + slatFutureValue + idgtFutureValue + ilitFutureValue }
+        { name: 'With Vault', value: netToHeirsOptimized, tax: taxOptimized, total: futureRemainingEstate + slatFutureValue + ilitFutureValue }
     ];
 
     // Max funding cap (cannot fund more than current assets or exemption)

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { useWealth } from './WealthContext';
 
 const PlanningModeContext = createContext();
@@ -14,27 +14,9 @@ export const usePlanningMode = () => {
 export const PlanningModeProvider = ({ children }) => {
     const { profile, updateProfile } = useWealth();
 
-    // Planning mode state
-    const [isPlanningMode, setIsPlanningMode] = useState(false);
-    const [planningGoal, setPlanningGoal] = useState('');
-    const [goalAnalysis, setGoalAnalysis] = useState(null);
-
-    // Load planning mode state from profile
-    useEffect(() => {
-        const objective = profile?.goals?.objective || '';
-        if (objective.trim().length > 0) {
-            setPlanningGoal(objective);
-            setIsPlanningMode(true);
-            analyzeGoal(objective);
-        }
-    }, [profile?.goals?.objective]);
-
-    // AI-powered goal analysis
-    const analyzeGoal = (objective) => {
-        if (!objective || objective.trim().length === 0) {
-            setGoalAnalysis(null);
-            return;
-        }
+    // AI-powered goal analysis helper (needs to be available for initialization)
+    const analyzeGoalInternal = (objective) => {
+        if (!objective || objective.trim().length === 0) return null;
 
         const lower = objective.toLowerCase();
         const analysis = {
@@ -127,8 +109,16 @@ export const PlanningModeProvider = ({ children }) => {
             }
         }
 
-        setGoalAnalysis(analysis);
+        return analysis;
     };
+
+    // Planning mode state
+    const [isPlanningMode, setIsPlanningMode] = useState(() => (profile?.goals?.objective?.trim().length || 0) > 0);
+    const [planningGoal, setPlanningGoal] = useState(() => profile?.goals?.objective || '');
+    const [goalAnalysis, setGoalAnalysis] = useState(() => analyzeGoalInternal(profile?.goals?.objective || ''));
+
+    // Public wrapper for analyzeGoal
+    const analyzeGoal = (objective) => setGoalAnalysis(analyzeGoalInternal(objective));
 
     // Enter planning mode
     const enterPlanningMode = (goal) => {

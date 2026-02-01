@@ -8,7 +8,7 @@ const formatCurrency = (v) => new Intl.NumberFormat('en-US', {
 }).format(v);
 
 const EstateReport = ({ onClose }) => {
-    const { profile, planningScope, targetMembers, scopedCurrentWealth } = useScopedWealth();
+    const { profile, planningScope, targetMembers } = useScopedWealth();
 
     // Aggregation Logic (Scoped Level)
     let grossEstate = 0;
@@ -52,7 +52,6 @@ const EstateReport = ({ onClose }) => {
 
     const taxableEstate = Math.max(0, grossEstate - totalExemption);
     const estimatedTax = taxableEstate * 0.40; // 40% Federal rate
-    const netEstate = grossEstate - estimatedTax;
 
     const reportTitle = planningScope === 'household' ? 'Clan Estate Analysis' : 'Unit Estate Analysis';
 
@@ -88,7 +87,7 @@ const EstateReport = ({ onClose }) => {
 
                 <div style={{ textAlign: 'center', marginBottom: 'var(--space-10)' }}>
                     <Shield size={48} className="text-gold" style={{ marginBottom: 'var(--space-4)' }} />
-                    <h2 style={{ fontSize: '2.5rem', fontWeight: 800, marginBottom: 'var(--space-2)' }}>Clan Estate Analysis</h2>
+                    <h2 style={{ fontSize: '2.5rem', fontWeight: 800, marginBottom: 'var(--space-2)' }}>{reportTitle}</h2>
                     <p style={{ color: 'hsl(var(--text-muted))' }}>Confidential Wealth Transfer Reporting</p>
                 </div>
 

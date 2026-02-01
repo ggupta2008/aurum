@@ -5,8 +5,6 @@ import { TrendingDown, TrendingUp, Zap, DollarSign, Info, X, Target, Calendar, P
 const RothConversionLadder = () => {
     const {
         profile,
-        scopedProjection,
-        planningScope,
         targetMembers,
         scopedAge,
         scopedTaxBuckets,
@@ -105,7 +103,6 @@ const RothConversionLadder = () => {
 
         // Calculate tax on conversion
         // This is simplified - assumes conversion fills bracket from bottom up
-        const totalTaxableIncome = taxableBaseIncome + actualConversion;
         let taxOnConversion = 0;
         let remainingIncome = actualConversion;
 

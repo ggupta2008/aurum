@@ -3,7 +3,8 @@ import { useScopedWealth } from '../../hooks/useScopedWealth';
 import { DollarSign, TrendingUp, ShieldCheck, Activity, Sparkles, Info, X, Calculator } from 'lucide-react';
 import CalculationTransparencyModal from './CalculationTransparencyModal';
 
-const MetricCard = ({ label, value, subtext, icon: Icon, trend, delay = 0, onInfoClick }) => {
+const MetricCard = ({ label, value, subtext, icon, trend, delay = 0, onInfoClick }) => {
+    const Icon = icon;
     const isPositive = trend > 0;
     const isNeutral = !trend;
 
@@ -138,9 +139,7 @@ const MetricCard = ({ label, value, subtext, icon: Icon, trend, delay = 0, onInf
 const SummaryCards = () => {
     const {
         scopedProjection,
-        scopedMonteCarlo,
         planningScope,
-        taxUnits,
         scopedCurrentWealth,
         formatCurrency
     } = useScopedWealth();
@@ -153,12 +152,7 @@ const SummaryCards = () => {
 
     // Derived values from scoped projection
     const startNW = scopedCurrentWealth;
-    const endNWBaseline = lastPoint.baseline || 0;
     const endNW = lastPoint.optimized || 0;
-
-    const successRatio = (scopedMonteCarlo && scopedMonteCarlo.length > 0) ? (scopedMonteCarlo[0].successRate ?? 100) : 100;
-
-    const wealthAlpha = endNW - endNWBaseline;
 
     return (
         <div style={{ position: 'relative' }}>
@@ -178,20 +172,19 @@ const SummaryCards = () => {
                     }}
                 >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
-                        <h4 style={{ color: 'hsl(var(--gold-primary))', textTransform: 'uppercase', fontSize: '0.8rem', letterSpacing: '0.1em' }}>Intelligence Engine Methodology</h4>
+                        <h4 style={{ color: 'hsl(var(--gold-primary))', textTransform: 'uppercase', fontSize: '0.8rem', letterSpacing: '0.1em', fontWeight: 700 }}>Transparency Ledger • Engine V2</h4>
                         <button onClick={() => setShowMethodology(false)} style={{ background: 'transparent', border: 'none', color: 'hsl(var(--text-dim))', cursor: 'pointer' }}>
                             <X size={18} />
                         </button>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-8)', fontSize: '0.8rem', color: 'hsl(var(--text-secondary))', lineHeight: 1.6 }}>
                         <div>
-                            <p style={{ marginBottom: '12px' }}><strong>Stress Test (Monte Carlo):</strong> We run 250 parallel universes of your life. The score is the % of universes where you never run out of money.</p>
-                            <p><strong>Wealth Projection:</strong> A deterministic 25-year compounding simulation comparing selected strategies vs. a default 'lazy' portfolio.</p>
+                            <p style={{ marginBottom: '12px' }}><strong style={{ color: 'white' }}>Deterministic Projection:</strong> A stepwise 25-year compounding model that ingests your income, spending, and asset location. It applies year-by-year inflation and progressive tax drag to reach the final number.</p>
+                            <p style={{ marginBottom: '12px' }}><strong style={{ color: 'white' }}>Structural Alpha:</strong> This is the value of your choices. By reducing fees from an industry-average 1.2% to an optimized 0.04% and shifting assets to tax-free buckets, we recapture millions in lost compounding power.</p>
                         </div>
                         <div>
-                            <p style={{ marginBottom: '12px' }}><strong>Scope Awareness:</strong> All metrics are calculated for the selected planning scope ({planningScope === 'household' ? 'Grand Clan' : taxUnits.find(u => u.id === planningScope)?.name || 'Current Unit'}). Values are proportionally allocated based on current asset ownership.</p>
-                            <p style={{ marginBottom: '12px' }}><strong>Milestone Triggers:</strong> The engine models Social Security (age 67), forced IRS RMDs (age 73), and Education COA drags automatically based on family dates of birth.</p>
-                            <p><strong>Legacy Calculation:</strong> The final figure represents your net-of-tax estate, accounting for debt amortization and strategic "Tax Bucket" optimization.</p>
+                            <p style={{ marginBottom: '12px' }}><strong style={{ color: 'white' }}>Stress Testing (Risk):</strong> The "Stressed Success" score is derived from 250 stochastic (random) market simulations. If your score is low, your 25yr Wealth projection is "Fragile" and subject to sequence-of-return risk.</p>
+                            <p><strong style={{ color: 'white' }}>Legacy Discount:</strong> We apply a 30% embedded tax liability discount to all Tax-Deferred (401k/IRA) assets. This shows you "Spendable Net Worth" rather than the raw account balance, providing a true fiduciary view of your estate.</p>
                         </div>
                     </div>
                 </div>

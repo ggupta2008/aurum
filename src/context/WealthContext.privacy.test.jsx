@@ -1,8 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { WealthProvider, useWealth } from './WealthContext';
-import * as clientManager from '../utils/clientManager';
 
 // Mock client manager
 vi.mock('../utils/clientManager', () => ({
@@ -21,6 +20,25 @@ vi.mock('../utils/clientManager', () => ({
     createNewClient: vi.fn(() => ({ clientId: 'new-client', profile: {} })),
     deleteClient: vi.fn(),
     duplicateClient: vi.fn()
+}));
+
+vi.mock('../utils/dataMigration', () => ({
+    performFullMigration: vi.fn()
+}));
+
+vi.mock('../utils/engine/financeEngine', () => ({
+    INITIAL_PROFILE: { family: [], financials: { assets: {} }, strategies: {} },
+    calculateProjection: vi.fn(() => ({ data: [], explanations: [] })),
+    calculateMonteCarlo: vi.fn(() => []),
+    getRecommendedStrategies: vi.fn(() => [])
+}));
+
+vi.mock('../utils/engine/taxRules', () => ({
+    identifyTaxUnits: vi.fn(() => [])
+}));
+
+vi.mock('../utils/ai/geminiClient', () => ({
+    getAdvisorResponse: vi.fn(() => Promise.resolve({ success: false, message: "Mocked response" }))
 }));
 
 const TestComponent = () => {

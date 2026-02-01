@@ -1,56 +1,7 @@
 import React, { useState } from 'react';
 import { useScopedWealth } from '../../hooks/useScopedWealth';
 import { MARKET_REGIMES } from '../../utils/engine/financeEngine';
-import { TrendingUp, Activity, Percent, ChevronDown, ChevronUp } from 'lucide-react';
-
-const AssumptionInput = ({ label, value, onChange, icon: Icon, suffix = "%" }) => (
-    <div style={{ marginBottom: 'var(--space-3)' }}>
-        <label style={{
-            display: 'block',
-            fontSize: 'var(--text-xs)',
-            color: 'hsl(var(--text-muted))',
-            marginBottom: '4px',
-            fontWeight: 500
-        }}>
-            {label}
-        </label>
-        <div style={{ position: 'relative' }}>
-            <div style={{
-                position: 'absolute',
-                left: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: 'hsl(var(--text-dim))'
-            }}>
-                <Icon size={14} />
-            </div>
-            <input
-                type="number"
-                step="0.1"
-                value={Math.round(value * 100 * 10) / 10}
-                onChange={(e) => onChange(parseFloat(e.target.value) / 100)}
-                style={{
-                    paddingLeft: '34px',
-                    paddingRight: '30px',
-                    background: 'hsla(var(--bg-void) / 0.4)',
-                    border: '1px solid hsla(var(--text-primary) / 0.1)',
-                    fontSize: '0.85rem'
-                }}
-            />
-            <div style={{
-                position: 'absolute',
-                right: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: 'hsl(var(--text-dim))',
-                fontSize: '0.75rem',
-                fontWeight: 600
-            }}>
-                {suffix}
-            </div>
-        </div>
-    </div>
-);
+import { Activity, ChevronDown, ChevronUp } from 'lucide-react';
 
 const GlobalAssumptions = () => {
     const { profile, updateMarketRegime } = useScopedWealth();

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Settings, Key, CheckCircle, XCircle, Wallet, RotateCcw, Save } from 'lucide-react';
 import { initializeGemini, getSpendingStats, resetSpending } from '../utils/ai/geminiClient';
 
@@ -7,22 +7,14 @@ import { initializeGemini, getSpendingStats, resetSpending } from '../utils/ai/g
  * Allows users to configure their Gemini API key
  */
 export default function AISettings() {
-    const [apiKey, setApiKey] = useState('');
-    const [isConfigured, setIsConfigured] = useState(false);
-    const [showSettings, setShowSettings] = useState(false);
-    const [stats, setStats] = useState(getSpendingStats());
-    const [customCap, setCustomCap] = useState(stats.cap);
-
-    useEffect(() => {
-        // Check if API key is already stored
+    const [apiKey, setApiKey] = useState(() => localStorage.getItem('gemini_api_key') || '');
+    const [isConfigured, setIsConfigured] = useState(() => {
         const storedKey = localStorage.getItem('gemini_api_key');
-        if (storedKey) {
-            setApiKey(storedKey);
-            const success = initializeGemini(storedKey);
-            setIsConfigured(success);
-        }
-        setStats(getSpendingStats());
-    }, []);
+        return storedKey ? initializeGemini(storedKey) : false;
+    });
+    const [showSettings, setShowSettings] = useState(false);
+    const [stats, setStats] = useState(() => getSpendingStats());
+    const [customCap, setCustomCap] = useState(() => getSpendingStats().cap);
 
     const updateCap = () => {
         localStorage.setItem('aurum_ai_spending_cap', customCap.toString());

@@ -5,7 +5,6 @@ const TaxWaterfall = () => {
     const {
         scopedProjection,
         profile,
-        planningScope,
         targetMembers,
         scopedTaxBuckets,
         scopedAge,

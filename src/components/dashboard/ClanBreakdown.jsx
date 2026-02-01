@@ -10,7 +10,7 @@ const formatCurrency = (v) => new Intl.NumberFormat('en-US', {
 }).format(v);
 
 const ClanBreakdown = ({ onShowReport }) => {
-    const { profile, taxUnits, planningScope, targetMembers, primaryMember } = useScopedWealth();
+    const { profile, targetMembers } = useScopedWealth();
 
     // Group net worth by familyGroupId (only for members in scope)
     const branchTotals = {};

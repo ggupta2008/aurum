@@ -1,7 +1,6 @@
 import React from 'react';
 import { useWealth } from '../context/WealthContext';
 import { Users, Plus, Trash2, Shield, Lock, DollarSign, MapPin, Flag, TrendingUp, CreditCard, Sparkles, Wand2, Home } from 'lucide-react';
-import { deriveEquityData } from '../utils/engine/equityIntelligence';
 
 const InputField = ({ label, value, onChange, icon: Icon, type = "number" }) => (
     <div style={{ marginBottom: 'var(--space-3)' }}>
@@ -495,16 +494,56 @@ const PortfolioView = () => {
 
             {/* --- CLAN LAYER (SHARED) --- */}
             <div className="glass-panel" style={{ padding: 'var(--space-6)', border: '1px solid hsla(var(--gold-primary) / 0.1)' }}>
-                <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'hsl(var(--gold-primary))', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-6)', textTransform: 'uppercase' }}>
-                    <Shield size={18} /> Clan Shared Core
-                </h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)' }}>
+                    <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'hsl(var(--gold-primary))', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', margin: 0, textTransform: 'uppercase' }}>
+                        <Shield size={18} /> Clan Shared Core
+                    </h3>
+
+                    {/* Distribution Summary */}
+                    {(() => {
+                        const shared = (profile.financials?.assets?.taxable || 0) +
+                            (profile.financials?.assets?.taxDeferred || 0) +
+                            (profile.financials?.assets?.taxFree || 0) +
+                            (profile.financials?.assets?.cash || 0) +
+                            (Array.isArray(profile.financials?.assets?.realEstate)
+                                ? profile.financials.assets.realEstate.reduce((a, p) => a + (p.value || 0), 0)
+                                : 0) +
+                            (Array.isArray(profile.financials?.assets?.positions)
+                                ? profile.financials.assets.positions.reduce((a, p) => a + (p.value || 0), 0)
+                                : 0);
+
+                        let distributed = 0;
+                        profile.family.forEach(m => {
+                            const f = m.financials || {};
+                            distributed += (f.stocks || 0) + (f.retirement || 0) + (f.taxFree || 0) + (f.cash || 0) +
+                                (Array.isArray(f.realEstate) ? f.realEstate.reduce((a, p) => a + (p.value || 0), 0) : 0) +
+                                (Array.isArray(f.positions) ? f.positions.reduce((a, p) => a + (p.value || 0), 0) : 0);
+                        });
+
+                        return (
+                            <div style={{ display: 'flex', gap: '12px', fontSize: '0.75rem' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                    <span style={{ color: 'hsl(var(--gold-primary))', fontWeight: 700 }}>{formatCurrency(shared)}</span>
+                                    <span style={{ color: 'hsl(var(--text-muted))' }}>In Shared Core</span>
+                                </div>
+                                <div style={{ width: '1px', background: 'hsla(var(--text-primary)/0.1)' }}></div>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                                    <span style={{ color: 'hsl(var(--text-primary))', fontWeight: 700 }}>{formatCurrency(distributed)}</span>
+                                    <span style={{ color: 'hsl(var(--text-muted))' }}>Held by Members</span>
+                                </div>
+                            </div>
+                        );
+                    })()}
+                </div>
+
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--space-8)' }}>
                     <div>
                         <h4 style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))', marginBottom: 'var(--space-4)', textTransform: 'uppercase' }}>Real Estate (Primary & Rental)</h4>
                         <RealEstateManager
                             assets={profile.financials?.assets?.realEstate}
                             onChange={(vals) => {
-                                const newFin = { ...profile.financials };
+                                const newFin = { ...(profile.financials || {}) };
+                                if (!newFin.assets) newFin.assets = {};
                                 newFin.assets = { ...newFin.assets, realEstate: vals };
                                 updateProfile({ financials: newFin });
                             }}
@@ -515,19 +554,45 @@ const PortfolioView = () => {
                         <LiabilityManager
                             liabilities={profile.financials?.liabilities}
                             onChange={(vals) => {
-                                updateProfile({ financials: { ...profile.financials, liabilities: vals } });
+                                const newFin = { ...(profile.financials || {}) };
+                                newFin.liabilities = vals;
+                                updateProfile({ financials: newFin });
                             }}
                         />
-                        <div style={{ marginTop: 'var(--space-6)' }}>
+
+                        <h4 style={{ fontSize: '0.7rem', color: 'hsl(var(--text-muted))', margin: 'var(--space-6) 0 var(--space-4) 0', textTransform: 'uppercase' }}>Liquid Clan Wealth (Buckets)</h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', background: 'hsla(var(--bg-void)/0.2)', padding: 'var(--space-4)', borderRadius: 'var(--radius-md)', border: '1px solid hsla(var(--text-primary)/0.05)' }}>
+                            <InputField label="Taxable (Brokerage)" icon={DollarSign} value={profile.financials?.assets?.taxable} onChange={(v) => {
+                                const newFin = { ...(profile.financials || {}) };
+                                if (!newFin.assets) newFin.assets = {};
+                                newFin.assets = { ...newFin.assets, taxable: parseFloat(v) || 0 };
+                                updateProfile({ financials: newFin });
+                            }} />
+                            <InputField label="Tax-Deferred (Traditional)" icon={Lock} value={profile.financials?.assets?.taxDeferred} onChange={(v) => {
+                                const newFin = { ...(profile.financials || {}) };
+                                if (!newFin.assets) newFin.assets = {};
+                                newFin.assets = { ...newFin.assets, taxDeferred: parseFloat(v) || 0 };
+                                updateProfile({ financials: newFin });
+                            }} />
+                            <InputField label="Tax-Free (Roth/HSA)" icon={Shield} value={profile.financials?.assets?.taxFree} onChange={(v) => {
+                                const newFin = { ...(profile.financials || {}) };
+                                if (!newFin.assets) newFin.assets = {};
+                                newFin.assets = { ...newFin.assets, taxFree: parseFloat(v) || 0 };
+                                updateProfile({ financials: newFin });
+                            }} />
                             <InputField label="Household Cash Reserve" icon={DollarSign} value={profile.financials?.assets?.cash} onChange={(v) => {
-                                const newFin = { ...profile.financials };
+                                const newFin = { ...(profile.financials || {}) };
+                                if (!newFin.assets) newFin.assets = {};
                                 newFin.assets = { ...newFin.assets, cash: parseFloat(v) || 0 };
                                 updateProfile({ financials: newFin });
                             }} />
                         </div>
+
                         <div style={{ marginTop: 'var(--space-4)' }}>
                             <InputField label="Household Baseline Spending" icon={CreditCard} value={profile.financials?.spending} onChange={(v) => {
-                                updateProfile({ financials: { ...profile.financials, spending: parseFloat(v) || 0 } });
+                                const newFin = { ...(profile.financials || {}) };
+                                newFin.spending = parseFloat(v) || 0;
+                                updateProfile({ financials: newFin });
                             }} />
                         </div>
                     </div>
@@ -536,7 +601,8 @@ const PortfolioView = () => {
                         <EquityManager
                             positions={profile.financials?.assets?.positions}
                             onChange={(vals) => {
-                                const newFin = { ...profile.financials };
+                                const newFin = { ...(profile.financials || {}) };
+                                if (!newFin.assets) newFin.assets = {};
                                 newFin.assets = { ...newFin.assets, positions: vals };
                                 updateProfile({ financials: newFin });
                             }}
@@ -548,6 +614,7 @@ const PortfolioView = () => {
             {/* --- SIBLING BRANCHES --- */}
             {Object.keys(groups).sort((a, b) => a - b).map((gid, gIdx) => (
                 <div key={gid} className="anim-fade-up" style={{ animationDelay: `${gIdx * 0.1}s` }}>
+                    {/* ... (Existing Branch Logic) ... */}
                     <div style={{ padding: 'var(--space-4) 0', borderBottom: '1px solid hsla(var(--text-primary) / 0.05)', marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                             <Users size={18} className="text-gold" />
@@ -664,6 +731,14 @@ const PortfolioView = () => {
                     </div>
                 </div>
             ))}
+
+            {/* DEBUG SECTION */}
+            <div style={{ marginTop: '40px', padding: '20px', borderTop: '1px dashed #333', opacity: 0.5 }}>
+                <h4 style={{ fontSize: '0.7rem', color: 'red' }}>DEBUG DATA (Scroll to see raw values)</h4>
+                <pre style={{ fontSize: '0.6rem', overflow: 'auto', maxHeight: '200px' }}>
+                    {JSON.stringify(profile.financials?.assets, null, 2)}
+                </pre>
+            </div>
         </div>
     );
 };

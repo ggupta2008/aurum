@@ -29,7 +29,6 @@ describe('Social Security Rules', () => {
 
         it('should account for inflation correctly', () => {
             const pia = 1000;
-            const annual = 12000;
             const inflation = 0.10; // 10% for easy math
             // Year 1: 12000
             // Year 2: 13200

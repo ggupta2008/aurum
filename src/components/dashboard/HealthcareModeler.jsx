@@ -4,7 +4,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart,
 import { HeartPulse, AlertTriangle, TrendingUp, ShieldAlert, Info, X, Users } from 'lucide-react';
 
 const HealthcareModeler = () => {
-    const { profile, planningScope, targetMembers, scopedAge, scopedIncome, scopedTaxBuckets } = useScopedWealth();
+    const { targetMembers, scopedAge, scopedIncome, scopedTaxBuckets } = useScopedWealth();
     const [showMethodology, setShowMethodology] = useState(false);
     const [includeLTC, setIncludeLTC] = useState(false);
 

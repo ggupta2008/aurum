@@ -6,7 +6,6 @@ const SafeWithdrawalRate = () => {
     const {
         scopedProjection,
         profile,
-        planningScope,
         scopedCurrentWealth,
         scopedAge,
         scopedSpending,

@@ -1,99 +1,90 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { INITIAL_PROFILE, calculateProjection, getRecommendedStrategies, calculateMonteCarlo } from '../utils/engine/financeEngine';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { INITIAL_PROFILE, calculateProjection, calculateMonteCarlo } from '../utils/engine/financeEngine';
 import { identifyTaxUnits } from '../utils/engine/taxRules';
+import { getAdvisorResponse } from '../utils/ai/geminiClient';
 import {
-    getAllClients,
     getClient,
     getCurrentClientId,
     setCurrentClientId,
     saveClient,
-    deleteClient,
     createNewClient,
-    duplicateClient,
     migrateLegacyData
 } from '../utils/clientManager';
 import { performFullMigration } from '../utils/dataMigration';
 
-const WealthContext = createContext();
+export const WealthContext = createContext();
 
 export const WealthProvider = ({ children }) => {
     // Multi-client state
     const [currentClientId, setCurrentClientIdState] = useState(() => {
-        // Run full migration to ensure data integrity
         try {
             performFullMigration();
         } catch (error) {
             console.error('Migration error:', error);
         }
 
-        // Try to migrate legacy data on first load
         const migration = migrateLegacyData();
-        if (migration.migrated) {
-            console.log(migration.message);
-            return migration.clientId;
-        }
+        if (migration.migrated) return migration.clientId;
 
-        // Check for existing current client
         const existing = getCurrentClientId();
         if (existing) return existing;
 
-        // No clients exist - create default
         const { clientId } = createNewClient('Demo Client', INITIAL_PROFILE);
         return clientId;
     });
 
     const [profile, setProfile] = useState(() => {
         const clientData = getClient(currentClientId);
-        const p = clientData || INITIAL_PROFILE;
-
-        // --- SANITY CHECK & REAL-TIME MIGRATION ---
-        if (p.family && Array.isArray(p.family)) {
-            p.family = p.family.map(m => {
-                if (m.financials) {
-                    if (typeof m.financials.realEstate === 'number') {
-                        const val = m.financials.realEstate;
-                        m.financials.realEstate = val > 0 ? [{ id: Date.now(), name: 'Legacy Asset', type: 'primary', value: val, mortgage: 0, rate: 0.04, termYears: 30 }] : [];
-                    }
-                    if (!Array.isArray(m.financials.positions)) m.financials.positions = [];
-                    if (!Array.isArray(m.financials.debts)) m.financials.debts = [];
-                }
-                return m;
-            });
-        }
-        if (p.financials?.assets) {
-            if (typeof p.financials.assets.realEstate === 'number') {
-                const val = p.financials.assets.realEstate;
-                p.financials.assets.realEstate = val > 0 ? [{ id: Date.now(), name: 'Legacy Household asset', type: 'primary', value: val, mortgage: 0, rate: 0.04, termYears: 30 }] : [];
-            }
-            if (!Array.isArray(p.financials.assets.realEstate)) p.financials.assets.realEstate = [];
-            if (!Array.isArray(p.financials.assets.positions)) p.financials.assets.positions = [];
-        }
-        return p;
+        return clientData || INITIAL_PROFILE;
     });
 
-    const [planningScope, setPlanningScope] = useState('household'); // 'household' or unit_id
+    const [planningScope, setPlanningScope] = useState('household');
     const [projection, setProjection] = useState({ data: [], explanations: [] });
     const [monteCarlo, setMonteCarlo] = useState([]);
-    const [recommendations, setRecommendations] = useState([]);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [privacyMode, setPrivacyMode] = useState(false);
-    const [theme, setTheme] = useState(() => {
-        return localStorage.getItem('aurum_ui_theme') || 'dark';
-    });
+    const [theme, setTheme] = useState(() => localStorage.getItem('aurum_ui_theme') || 'dark');
+    const [recommendations, setRecommendations] = useState([]);
+    const isAnalyzingRef = React.useRef(false);
 
-    // Derived IRS groupings
-    const taxUnits = identifyTaxUnits(profile.family);
-
-    // Apply theme to document
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('aurum_ui_theme', theme);
     }, [theme]);
 
-    const toggleTheme = () => {
-        setTheme(prev => prev === 'dark' ? 'light' : 'dark');
-    };
+    const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
 
-    // Auto-save profile changes to current client
+    const taxUnits = React.useMemo(() => identifyTaxUnits(profile.family), [profile.family]);
+
+    // --- DYNAMIC AI ANALYSIS ---
+    const performInitialAnalysis = useCallback(async (p = profile) => {
+        if (isAnalyzingRef.current) return;
+        isAnalyzingRef.current = true;
+        setIsAnalyzing(true);
+        
+        try {
+            const primaryMember = p.family?.find(m => m.relation === 'Self') || p.family?.[0];
+            const aiContext = {
+                primaryProfile: primaryMember,
+                totalNetWorth: (p.financials?.assets?.taxable || 0) + (p.financials?.assets?.taxDeferred || 0),
+                annualIncome: p.financials?.income || primaryMember?.financials?.income || 0,
+                breakdown: { assets: [], liabilities: [] } 
+            };
+
+            const response = await getAdvisorResponse("Run a comprehensive financial audit and suggest optimization strategies.", aiContext);
+            
+            if (response.success && response.meta?.active_strategies) {
+                setRecommendations(response.meta.active_strategies);
+            }
+        } catch (error) {
+            console.error('Initial analysis failed:', error);
+        } finally {
+            isAnalyzingRef.current = false;
+            setIsAnalyzing(false);
+        }
+    }, [profile]);
+
+    // Auto-save & Update Projections
     useEffect(() => {
         if (currentClientId && profile) {
             saveClient(currentClientId, profile);
@@ -103,17 +94,26 @@ export const WealthProvider = ({ children }) => {
         if (planningScope !== 'household') {
             const unit = taxUnits.find(u => u.id === planningScope);
             if (unit) {
-                targetProfile = {
-                    ...profile,
-                    family: [...unit.members, ...unit.dependents],
-                };
+                targetProfile = { ...profile, family: [...unit.members, ...unit.dependents] };
             }
         }
 
         setProjection(calculateProjection(targetProfile));
-        setMonteCarlo(calculateMonteCarlo(targetProfile));
-        setRecommendations(getRecommendedStrategies(targetProfile));
-    }, [profile, planningScope, currentClientId]);
+
+        const timer = setTimeout(() => {
+            setMonteCarlo(calculateMonteCarlo(targetProfile));
+        }, 100);
+
+        return () => clearTimeout(timer);
+    }, [profile, planningScope, currentClientId, taxUnits]);
+
+    // Initial Trigger
+    useEffect(() => {
+        // Only run if we have no AI strategies yet
+        if (Object.keys(profile.strategies || {}).length === 0) {
+            performInitialAnalysis();
+        }
+    }, [currentClientId, performInitialAnalysis]);
 
     const updateFinancials = (key, value) => {
         setProfile(prev => ({
@@ -122,87 +122,9 @@ export const WealthProvider = ({ children }) => {
         }));
     };
 
-    const togglePrivacyMode = () => {
-        setPrivacyMode(prev => !prev);
-    };
-
-    /**
-     * Formats currency with respect to privacy mode
-     */
-    const formatCurrency = (amount, options = {}) => {
-        if (privacyMode) {
-            return '••••••';
-        }
-
-        const defaultOptions = {
-            style: 'currency',
-            currency: 'USD',
-            maximumFractionDigits: 0,
-            minimumFractionDigits: 0,
-        };
-
-        return new Intl.NumberFormat('en-US', {
-            ...defaultOptions,
-            ...options
-        }).format(amount);
-    };
-
-    const updateGoal = (goalId) => {
-        setProfile(prev => ({
-            ...prev,
-            goals: { ...prev.goals, primary: goalId }
-        }));
-    };
-
-    const updateMarketRegime = (regimeId) => {
-        setProfile(prev => ({
-            ...prev,
-            marketRegime: regimeId
-        }));
-    };
-
-    const addFamilyMember = (groupId = 0, relation = 'Child') => {
-        setProfile(prev => ({
-            ...prev,
-            family: [...prev.family, {
-                id: Date.now(),
-                name: groupId === 0 ? 'New Member' : `Sibling Branch Member`,
-                age: relation === 'Sibling' ? 40 : 10,
-                relation: relation,
-                residency: 'US_Citizen',
-                state: 'CA',
-                familyGroupId: groupId,
-                financials: {
-                    income: 0,
-                    stocks: 0,
-                    retirement: 0,
-                    realEstate: [],
-                    positions: [],
-                    debts: [],
-                    cash: 0
-                }
-            }]
-        }));
-    };
-
-    const updateFamilyMember = (index, updates) => {
-        setProfile(prev => {
-            const newFamily = [...prev.family];
-            newFamily[index] = { ...newFamily[index], ...updates };
-            return { ...prev, family: newFamily };
-        });
-    };
-
-    const removeFamilyMember = (index) => {
-        setProfile(prev => ({
-            ...prev,
-            family: prev.family.filter((_, i) => i !== index)
-        }));
-    };
-
     const toggleStrategy = (id) => {
         setProfile(prev => {
-            const existing = prev.strategies[id] || { active: false, inputs: {} };
+            const existing = prev.strategies[id] || { active: false };
             return {
                 ...prev,
                 strategies: {
@@ -213,34 +135,11 @@ export const WealthProvider = ({ children }) => {
         });
     };
 
-    // Auto-enable high confidence strategies
-    const applyAutopilot = () => {
-        const recs = getRecommendedStrategies(profile);
+    const removeStrategy = (id) => {
         setProfile(prev => {
             const newStrategies = { ...prev.strategies };
-            recs.forEach(rec => {
-                if (rec.score > 85) {
-                    const existing = newStrategies[rec.id] || { inputs: {} };
-                    newStrategies[rec.id] = { ...existing, active: true };
-                }
-            });
+            delete newStrategies[id];
             return { ...prev, strategies: newStrategies };
-        });
-    };
-
-    const updateStrategyInput = (stratId, inputKey, value) => {
-        setProfile(prev => {
-            const existing = prev.strategies[stratId] || { active: true, inputs: {} };
-            return {
-                ...prev,
-                strategies: {
-                    ...prev.strategies,
-                    [stratId]: {
-                        ...existing,
-                        inputs: { ...existing.inputs, [inputKey]: parseFloat(value) || 0 }
-                    }
-                }
-            };
         });
     };
 
@@ -248,74 +147,38 @@ export const WealthProvider = ({ children }) => {
         if (!aiMeta || !aiMeta.active_strategies) return;
 
         setProfile(prev => {
-            const newStrategies = { ...prev.strategies };
+            const newStrategies = { ...(prev.strategies || {}) };
             aiMeta.active_strategies.forEach(strat => {
-                const { id, active, ...inputs } = strat;
-                newStrategies[id] = {
-                    active,
-                    inputs: { ...(newStrategies[id]?.inputs || {}), ...inputs }
+                if (!strat.id) return; // Safeguard against malformed AI output
+                // Store the full AI metadata so the engine can model it dynamically
+                newStrategies[strat.id] = {
+                    ...strat,
+                    active: true,
+                    inputs: { ...(newStrategies[strat.id]?.inputs || {}), ...(strat.inputs || {}) }
                 };
             });
             return { ...prev, strategies: newStrategies };
         });
     };
 
-    // ========== CLIENT MANAGEMENT FUNCTIONS ==========
+    const formatCurrency = (amount, options = {}) => {
+        if (privacyMode) return '••••••';
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency', currency: 'USD',
+            maximumFractionDigits: 0, minimumFractionDigits: 0,
+            ...options
+        }).format(amount);
+    };
 
+    // Client Management Wrappers
     const switchClient = (clientId) => {
         const clientData = getClient(clientId);
         if (clientData) {
             setCurrentClientIdState(clientId);
             setCurrentClientId(clientId);
             setProfile(clientData);
-            setPlanningScope('household'); // Reset to household view
+            setPlanningScope('household');
         }
-    };
-
-    const createClient = (name = 'New Client') => {
-        const { clientId, profile: newProfile } = createNewClient(name);
-        setCurrentClientIdState(clientId);
-        setProfile(newProfile);
-        setPlanningScope('household');
-        return clientId;
-    };
-
-    const removeClient = (clientId) => {
-        const success = deleteClient(clientId);
-        if (success && clientId === currentClientId) {
-            // If deleting current client, switch to first available or create new
-            const remaining = getAllClients();
-            if (remaining.length > 0) {
-                switchClient(remaining[0].id);
-            } else {
-                createClient('New Client');
-            }
-        }
-        return success;
-    };
-
-    const cloneClient = (clientId, newName) => {
-        const result = duplicateClient(clientId, newName);
-        if (result) {
-            switchClient(result.clientId);
-            return result.clientId;
-        }
-        return null;
-    };
-
-    const updateClientMetadata = (clientId, metadata) => {
-        const clientData = getClient(clientId);
-        if (clientData) {
-            saveClient(clientId, clientData, metadata);
-        }
-    };
-
-    const getClientList = () => {
-        return getAllClients();
-    };
-
-    const updateProfile = (updates) => {
-        setProfile(prev => ({ ...prev, ...updates }));
     };
 
     return (
@@ -327,32 +190,28 @@ export const WealthProvider = ({ children }) => {
             planningScope,
             setPlanningScope,
             taxUnits,
-            updateProfile,
             updateFinancials,
-            updateGoal,
-            updateFamilyMember,
-            addFamilyMember,
-            removeFamilyMember,
             toggleStrategy,
-            updateStrategyInput,
+            removeStrategy,
             applyAIStrategies,
-            applyAutopilot,
-            updateMarketRegime,
+            performInitialAnalysis,
+            isAnalyzing,
             // Client management
             currentClientId,
             switchClient,
-            createClient,
-            removeClient,
-            cloneClient,
-            updateClientMetadata,
-            getClientList,
-            // Privacy mode
+            createClient: (name) => {
+                const { clientId, profile: p } = createNewClient(name);
+                setCurrentClientIdState(clientId);
+                setProfile(p);
+                return clientId;
+            },
+            // UI
             privacyMode,
-            togglePrivacyMode,
+            togglePrivacyMode: () => setPrivacyMode(p => !p),
             formatCurrency,
-            // Theme
             theme,
-            toggleTheme
+            toggleTheme,
+            updateProfile: (u) => setProfile(prev => ({ ...prev, ...u }))
         }}>
             {children}
         </WealthContext.Provider>

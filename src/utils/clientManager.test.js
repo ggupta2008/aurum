@@ -39,7 +39,7 @@ describe('Client Manager', () => {
                 marketRegime: 'stagflation',
             };
 
-            const { clientId, profile } = createNewClient('Custom Client', customProfile);
+            const { profile } = createNewClient('Custom Client', customProfile);
 
             expect(profile.family[0].name).toBe('Custom');
             expect(profile.family[0].age).toBe(50);

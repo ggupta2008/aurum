@@ -14,36 +14,44 @@ describe('Strategic Logic - Wealth Alpha Generation', () => {
 
     it('should generate alpha when "Simple Path" strategy is active', () => {
         const profile = createBaseProfile();
+        // Add specific high-fee positions to trigger the alpha
+        profile.financials.assets.positions = [
+            { ticker: 'EXPENSIVE_FUND', value: 3500000, expenseRatio: 0.012, taxStatus: 'taxable' }
+        ];
         profile.strategies = {
-            'simple_path': { active: true, inputs: { allocation: 100 } }
+            'simple_path': { 
+                active: true, 
+                name: 'Fee Reduction',
+                impact_type: 'return_boost',
+                impact_value: 0.0115 // 1.15% fee savings
+            }
         };
 
         const result = calculateProjection(profile);
         const year25 = result.data[24];
 
-        // Optimized should be significantly higher than baseline due to lower drag (1.5bps vs 120bps)
+        // Optimized should be significantly higher than baseline
         expect(year25.optimized).toBeGreaterThan(year25.baseline);
 
         // Calculate raw alpha
         const alpha = year25.optimized - year25.baseline;
-        expect(alpha).toBeGreaterThan(500000); // 1% annual delta over 25 years on millions is huge
+        expect(alpha).toBeGreaterThan(500000); 
     });
 
     it('should generate alpha when "Roth Conversion" strategy is active', () => {
         const profile = createBaseProfile();
         profile.strategies = {
-            'roth_conversion': { active: true, inputs: { annualAmount: 50000 } }
+            'roth_conversion': { 
+                active: true, 
+                name: 'Roth Conversion',
+                impact_type: 'tax_reduction',
+                impact_value: 0.05 // 5% effective tax reduction
+            }
         };
 
         const result = calculateProjection(profile);
         const year25 = result.data[24];
 
-        // Roth conversion moves money from tax-deferred (which has embedded tax liability) 
-        // to tax-free. While the engine baseline/optimized in the chart usually shows 
-        // total account values, the "alpha" comes from the tax-free compounding.
-
-        // In our current engine, roth conversion affects the buckets.
-        // Let's verify and see if it produces delta.
         expect(year25.optimized).toBeGreaterThan(year25.baseline);
     });
 

@@ -221,7 +221,6 @@ h6 {
     inset 0 0 0 1px hsla(var(--text-primary) / 0.03);
   /* Inner bevel */
   position: relative;
-  overflow: hidden;
 }
 
 /* Shining edge effect on hover */

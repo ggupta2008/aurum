@@ -1,17 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useScopedWealth } from '../../hooks/useScopedWealth';
-import { Lightbulb } from 'lucide-react';
+import { Lightbulb, TrendingUp, Activity } from 'lucide-react';
 
 const ProjectionChart = () => {
-    const { scopedProjection, scopedMonteCarlo } = useScopedWealth();
+    const { scopedProjection, scopedMonteCarlo, profile } = useScopedWealth();
     const { data, explanations } = scopedProjection;
-    const [showStressTest, setShowStressTest] = React.useState(false);
+    const [viewMode, setViewMode] = useState('growth'); // 'growth' | 'risk'
 
     const formatCurrency = (value) =>
         new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: 'compact' }).format(value);
 
-    // Merge MC data into the main display set (everything is already scoped by the hook)
+    // Merge MC data
     const displayData = data.map((d, i) => ({
         ...d,
         p10: scopedMonteCarlo?.[i]?.p10,
@@ -23,6 +23,11 @@ const ProjectionChart = () => {
     const finalData = data[data.length - 1] || {};
     const wealthAlpha = (finalData.optimized || 0) - (finalData.baseline || 0);
 
+    // Identify Active Strategies (Logic only, no UI display as requested)
+    Object.entries(profile.strategies || {})
+        .filter(([, s]) => s.active)
+        .map(([id]) => id);
+
     return (
         <div className="glass-panel anim-fade-up anim-delay-2" style={{
             padding: 'var(--space-6)',
@@ -30,99 +35,126 @@ const ProjectionChart = () => {
             flexDirection: 'column',
             overflow: 'hidden',
             height: '100%',
-            minHeight: '500px',
+            minHeight: '600px',
             position: 'relative'
         }}>
-            <div style={{ marginBottom: 'var(--space-6)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            {/* Header Row: Title + Mode Switcher */}
+            <div style={{ marginBottom: 'var(--space-6)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                     <h3 style={{
                         fontSize: '1.2rem',
                         fontWeight: 700,
-                        marginBottom: 'var(--space-2)',
                         fontFamily: 'Space Grotesk, sans-serif',
                         letterSpacing: '-0.02em',
-                        color: 'hsl(var(--text-primary))'
+                        color: 'hsl(var(--text-primary))',
+                        marginBottom: '4px'
                     }}>
                         Wealth Trajectory
                     </h3>
-                    <p style={{
-                        fontSize: '0.85rem',
-                        color: 'hsl(var(--text-secondary))',
-                        maxWidth: '80%'
-                    }}>
-                        {showStressTest ? 'Monte Carlo stress test: 250 stochastic simulations showing 10th-90th percentile.' : '25-year simulation comparing baseline vs. Aurum-optimized strategies'}
-                    </p>
-
-                    {/* Definitions Helper */}
-                    {/* Definitions Helper */}
-                    <div style={{ display: 'flex', gap: '16px', marginTop: '12px', flexWrap: 'wrap', opacity: 0.8 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <div style={{ width: '12px', height: '2px', background: 'hsl(var(--text-muted))', borderTop: '2px dashed hsl(var(--text-muted))' }}></div>
-                            <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-secondary))' }}>
-                                <strong>Status Quo:</strong> Baseline
+                    {/* Dynamic Subtitle */}
+                    <div style={{ fontSize: '0.8rem', color: 'hsl(var(--text-secondary))', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {viewMode === 'growth' ? (
+                            <>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'hsl(var(--text-muted))', opacity: 0.5 }}></div>
+                                    Status Quo
+                                </span>
+                                <span style={{ color: 'hsl(var(--text-muted))' }}>vs</span>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'hsl(var(--gold-primary))', fontWeight: 600 }}>
+                                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'hsl(var(--gold-primary))' }}></div>
+                                    AI Optimized
+                                </span>
+                            </>
+                        ) : (
+                            <span style={{ color: 'hsl(var(--text-secondary))' }}>
+                                Monte Carlo Simulation (250 runs)
                             </span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'hsl(var(--gold-primary))' }}></div>
-                            <span style={{ fontSize: '0.7rem', color: 'hsl(var(--text-secondary))' }}>
-                                <strong>Optimized:</strong> with AI Strategy
-                            </span>
-                        </div>
+                        )}
                     </div>
                 </div>
 
-                {/* Alpha Badge */}
-                {wealthAlpha > 0 && (
-                    <div className="anim-fade-left" style={{
-                        textAlign: 'right',
-                        background: 'hsla(var(--success)/0.1)',
-                        padding: '8px 16px',
-                        borderRadius: '12px',
-                        border: '1px solid hsla(var(--success)/0.2)'
-                    }}>
-                        <div style={{
-                            fontSize: '0.7rem',
-                            color: 'hsl(var(--success))',
-                            fontWeight: 700,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.05em',
-                            marginBottom: '2px'
-                        }}>
-                            Lifetime Alpha
-                        </div>
-                        <div style={{
-                            fontSize: '1.3rem',
-                            fontWeight: 700,
-                            fontFamily: 'Space Grotesk, sans-serif',
-                            color: 'hsl(var(--success))',
-                            letterSpacing: '-0.02em'
-                        }}>
-                            +{formatCurrency(wealthAlpha)}
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            <div style={{ position: 'absolute', top: '20px', right: '20px', display: 'none' }}>
-                {/* Hidden trigger for alignment if needed later */}
-            </div>
-
-            <div style={{ marginBottom: '10px', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                <button
-                    onClick={() => setShowStressTest(!showStressTest)}
-                    className={`btn-ghost ${showStressTest ? 'btn-active' : ''}`}
-                    style={{
-                        fontSize: '0.75rem',
-                        padding: '6px 12px',
+                {/* Right Side: Mode Switcher + Alpha */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    {/* View Mode Switcher */}
+                    <div style={{
+                        background: 'hsla(var(--bg-void)/0.5)',
                         border: '1px solid hsla(var(--text-primary)/0.1)',
-                        borderRadius: 'var(--radius-full)',
-                        cursor: 'pointer',
-                        background: showStressTest ? 'hsla(var(--text-primary)/0.1)' : 'transparent',
-                        color: 'hsl(var(--text-secondary))'
-                    }}
-                >
-                    {showStressTest ? 'Hide Stress Test' : 'Run Stress Test'}
-                </button>
+                        borderRadius: '8px',
+                        padding: '3px',
+                        display: 'flex'
+                    }}>
+                        <button
+                            onClick={() => setViewMode('growth')}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '6px 12px',
+                                borderRadius: '6px',
+                                border: 'none',
+                                fontSize: '0.75rem',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                background: viewMode === 'growth' ? 'hsla(var(--text-primary)/0.1)' : 'transparent',
+                                color: viewMode === 'growth' ? 'hsl(var(--text-primary))' : 'hsl(var(--text-secondary))'
+                            }}
+                        >
+                            <TrendingUp size={14} />
+                            Growth
+                        </button>
+                        <button
+                            onClick={() => setViewMode('risk')}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '6px 12px',
+                                borderRadius: '6px',
+                                border: 'none',
+                                fontSize: '0.75rem',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                background: viewMode === 'risk' ? 'hsla(var(--text-primary)/0.1)' : 'transparent',
+                                color: viewMode === 'risk' ? 'hsl(var(--text-primary))' : 'hsl(var(--text-secondary))'
+                            }}
+                        >
+                            <Activity size={14} />
+                            Risk
+                        </button>
+                    </div>
+
+                    {/* Alpha Badge (Only in Growth Mode or if positive) */}
+                    {wealthAlpha > 0 && (
+                        <div style={{
+                            textAlign: 'right',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'flex-end',
+                            paddingLeft: '16px',
+                            borderLeft: '1px solid hsla(var(--text-primary)/0.1)'
+                        }}>
+                            <div style={{
+                                fontSize: '0.65rem',
+                                color: 'hsl(var(--success))',
+                                fontWeight: 700,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em'
+                            }}>
+                                Alpha
+                            </div>
+                            <div style={{
+                                fontSize: '1.1rem',
+                                fontWeight: 700,
+                                fontFamily: 'Space Grotesk, sans-serif',
+                                color: 'hsl(var(--success))'
+                            }}>
+                                +{formatCurrency(wealthAlpha)}
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
 
             <div style={{ flex: 1, minHeight: '350px' }}>
@@ -137,9 +169,6 @@ const ProjectionChart = () => {
                                 <stop offset="5%" stopColor="hsl(var(--gold-primary))" stopOpacity={0.4} />
                                 <stop offset="95%" stopColor="hsl(var(--gold-primary))" stopOpacity={0} />
                             </linearGradient>
-                            <pattern id="diagonalHatch" width="4" height="4" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
-                                <line x1="0" y1="0" x2="0" y2="4" style={{ stroke: 'hsl(var(--bull-case))', strokeWidth: 1, opacity: 0.3 }} />
-                            </pattern>
                         </defs>
                         <CartesianGrid
                             strokeDasharray="3 3"
@@ -163,16 +192,9 @@ const ProjectionChart = () => {
                             axisLine={false}
                         />
                         <Tooltip
+                            cursor={{ stroke: 'hsla(var(--text-primary)/0.1)', strokeWidth: 1 }}
                             content={({ active, payload, label }) => {
                                 if (active && payload && payload.length) {
-                                    const currentData = payload[0].payload;
-                                    const yearIndex = displayData.findIndex(d => d.year === currentData.year);
-                                    const prevData = yearIndex > 0 ? displayData[yearIndex - 1] : null;
-
-                                    const currentAlpha = (currentData.optimized || 0) - (currentData.baseline || 0);
-                                    const prevAlpha = prevData ? ((prevData.optimized || 0) - (prevData.baseline || 0)) : 0;
-                                    const yoyAlpha = currentAlpha - prevAlpha;
-
                                     return (
                                         <div className="glass-panel" style={{
                                             padding: '12px',
@@ -183,105 +205,94 @@ const ProjectionChart = () => {
                                             <div style={{ fontSize: '0.8rem', color: 'hsl(var(--text-secondary))', marginBottom: '8px', fontWeight: 600 }}>
                                                 Year {label}
                                             </div>
-                                            {payload.map((p, idx) => (
-                                                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
-                                                    <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: p.stroke }} />
-                                                    <span style={{ fontSize: '0.8rem', color: 'hsl(var(--text-muted))', flex: 1 }}>{p.name}:</span>
-                                                    <span style={{ fontSize: '0.9rem', color: 'hsl(var(--text-primary))', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700 }}>
-                                                        {formatCurrency(p.value)}
-                                                    </span>
-                                                </div>
-                                            ))}
-
-                                            {/* YoY Alpha Section */}
-                                            {currentAlpha !== 0 && (
-                                                <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid hsla(var(--text-primary)/0.1)' }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-                                                        <span style={{ fontSize: '0.75rem', color: 'hsl(var(--success))', fontWeight: 600, textTransform: 'uppercase' }}>
-                                                            Annual Alpha Gain
-                                                        </span>
-                                                        <span style={{ fontSize: '0.85rem', color: 'hsl(var(--success))', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700 }}>
-                                                            +{formatCurrency(yoyAlpha > 0 ? yoyAlpha : 0)}
+                                            {payload.map((p, idx) => {
+                                                if (p.name === 'hidden') return null;
+                                                return (
+                                                    <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
+                                                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: p.stroke }} />
+                                                        <span style={{ fontSize: '0.8rem', color: 'hsl(var(--text-muted))', flex: 1 }}>{p.name}:</span>
+                                                        <span style={{ fontSize: '0.9rem', color: 'hsl(var(--text-primary))', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700 }}>
+                                                            {formatCurrency(p.value)}
                                                         </span>
                                                     </div>
-                                                </div>
-                                            )}
+                                                );
+                                            })}
                                         </div>
                                     );
                                 }
                                 return null;
                             }}
                         />
-                        <Legend
-                            verticalAlign="top"
-                            height={36}
-                            iconType="circle"
-                            formatter={(value) => (
-                                <span style={{ color: 'hsl(var(--text-secondary))', fontSize: '0.75rem', fontWeight: 500 }}>
-                                    {value}
-                                </span>
-                            )}
-                        />
 
-                        {showStressTest && (
-                            <Area
-                                type="monotone"
-                                dataKey="p90"
-                                name="Bull Case (90th)"
-                                stroke="hsl(var(--bull-case))"
-                                strokeWidth={1}
-                                strokeDasharray="4 4"
-                                fillOpacity={0.1}
-                                fill="hsl(var(--bull-case))"
-                            />
-                        )}
-                        {showStressTest && (
-                            <Area
-                                type="monotone"
-                                dataKey="p10"
-                                name="Bear Case (10th)"
-                                stroke="hsl(var(--bear-case))"
-                                strokeWidth={1}
-                                strokeDasharray="4 4"
-                                fillOpacity={0.1}
-                                fill="hsl(var(--bear-case))"
-                            />
+                        {/* RENDER LOGIC BASED ON VIEW MODE */}
+                        {viewMode === 'risk' && (
+                            <>
+                                <Area
+                                    type="monotone"
+                                    dataKey="p90"
+                                    name="Bull Case (90th)"
+                                    stroke="hsl(var(--bull-case))"
+                                    strokeWidth={1}
+                                    strokeDasharray="4 4"
+                                    fillOpacity={0.1}
+                                    fill="hsl(var(--bull-case))"
+                                />
+                                <Area
+                                    type="monotone"
+                                    dataKey="p10"
+                                    name="Bear Case (10th)"
+                                    stroke="hsl(var(--bear-case))"
+                                    strokeWidth={1}
+                                    strokeDasharray="4 4"
+                                    fillOpacity={0.1}
+                                    fill="hsl(var(--bear-case))"
+                                />
+                                {/* Overlay Median for context */}
+                                <Area
+                                    type="monotone"
+                                    dataKey="p50"
+                                    name="Median"
+                                    stroke="hsl(var(--text-secondary))"
+                                    strokeWidth={2}
+                                    fillOpacity={0}
+                                />
+                            </>
                         )}
 
-                        {!showStressTest && (
-                            <Area
-                                type="monotone"
-                                dataKey="baseline"
-                                name="Status Quo"
-                                stroke="hsl(var(--text-muted))"
-                                strokeWidth={2}
-                                strokeDasharray="6 6"
-                                strokeOpacity={0.7}
-                                fill="url(#baselineGradient)"
-                                fillOpacity={1}
-                            />
+                        {viewMode === 'growth' && (
+                            <>
+                                <Area
+                                    type="monotone"
+                                    dataKey="baseline"
+                                    name="Status Quo"
+                                    stroke="hsl(var(--text-muted))"
+                                    strokeWidth={2}
+                                    strokeDasharray="6 6"
+                                    strokeOpacity={0.7}
+                                    fill="url(#baselineGradient)"
+                                    fillOpacity={1}
+                                />
+                                <Area
+                                    type="monotone"
+                                    dataKey="optimized"
+                                    name="Aurum Optimized"
+                                    stroke="hsl(var(--gold-primary))"
+                                    strokeWidth={3}
+                                    fill="url(#optimizedGradient)"
+                                    fillOpacity={1}
+                                />
+                            </>
                         )}
-                        <Area
-                            type="monotone"
-                            dataKey="optimized"
-                            name="Aurum Optimized"
-                            stroke="hsl(var(--gold-primary))"
-                            strokeWidth={3}
-                            fill="url(#optimizedGradient)"
-                            fillOpacity={1}
-                        />
                     </AreaChart>
                 </ResponsiveContainer>
             </div>
 
-            {/* Insights */}
-            {explanations && explanations.length > 0 && (
+            {/* Insights Footer */}
+            {explanations && explanations.length > 0 && viewMode === 'growth' && (
                 <div style={{
                     marginTop: 'var(--space-4)',
-                    padding: 'var(--space-4)',
-                    background: 'hsla(var(--bg-void) / 0.4)',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid hsla(var(--text-primary) / 0.06)'
+                    paddingTop: 'var(--space-4)',
+                    borderTop: '1px solid hsla(var(--text-primary) / 0.06)'
                 }}>
                     <div style={{
                         display: 'flex',
@@ -304,9 +315,11 @@ const ProjectionChart = () => {
                         listStyle: 'none',
                         fontSize: '0.85rem',
                         color: 'hsl(var(--text-secondary))',
-                        lineHeight: 1.6
+                        lineHeight: 1.6,
+                        margin: 0,
+                        padding: 0
                     }}>
-                        {explanations.slice(0, 3).map((expl, i) => (
+                        {explanations.slice(0, 2).map((expl, i) => (
                             <li key={i} style={{ marginBottom: 'var(--space-1)', display: 'flex', gap: '8px' }}>
                                 <span style={{ color: 'hsl(var(--gold-primary))', opacity: 0.6 }}>•</span>
                                 {expl}
